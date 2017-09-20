@@ -1,11 +1,13 @@
 [![](https://jitpack.io/v/umjammer/Java-Apple-Lossless-decoder.svg)](https://jitpack.io/#umjammer/Java-Apple-Lossless-decoder)
 
+```
 ////////////////////////////////////////////////////////////////////////////
 //            Java Implementation of Apple Lossless Decoder               //
 //               Copyright (c) 2011-2014 Peter McQuillan                  //
 //                          All Rights Reserved.                          //
 //      Distributed under the BSD Software License (see license.txt)      //
 ////////////////////////////////////////////////////////////////////////////
+```
 
 This package contains a Java implementation of an Apple Lossless decoder.
 It is ported from v0.2.0 of the Apple Lossless decoder written by David Hammerton.
@@ -17,11 +19,11 @@ Apple Lossless audio file as input and output a RIFF wav file.
 The Java source code files can be compiled to class files very simply by going 
 to the directory where you have downloaded the .java files and running
 
-javac *.java
+`javac *.java`
 
 To run the demo program, use the following command
 
-java DecoderDemo <input.m4a> <output.wav>
+`java DecoderDemo <input.m4a> <output.wav>`
 
 where input.m4a is the name of the Apple Lossless file you wish to decode to a WAV file.
 
