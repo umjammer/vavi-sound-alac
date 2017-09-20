@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>soiaf</groupId>
+  <artifactId>apple-lossless-decoder</artifactId>
+  <name>Java Implementation of Apple Lossless Decoder</name>
+  <organization>
+    <name>soiaf</name>
+  </organization>
+  <version>0.2.9</version>
+  <url>https://github.com/soiaf/Java-Apple-Lossless-decoder</url>
+  <description></description>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>8</source>
+          <target>8</target>
+          <encoding>UTF-8</encoding>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <repositories>
+  </repositories>
+  <dependencies>
+  </dependencies>
+</project>
