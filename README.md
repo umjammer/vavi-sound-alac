@@ -1,13 +1,10 @@
-[![](https://jitpack.io/v/umjammer/Java-Apple-Lossless-decoder.svg)](https://jitpack.io/#umjammer/Java-Apple-Lossless-decoder)
+[![Release](https://jitpack.io/v/umjammer/Java-Apple-Lossless-decoder.svg)](https://jitpack.io/#umjammer/Java-Apple-Lossless-decoder) [![Parent](https://img.shields.io/badge/Parent-vavi--sound--sandbox-pink)](https://github.com/umjammer/vavi-sound-sandbox)
 
-```
-////////////////////////////////////////////////////////////////////////////
-//            Java Implementation of Apple Lossless Decoder               //
-//               Copyright (c) 2011-2014 Peter McQuillan                  //
-//                          All Rights Reserved.                          //
-//      Distributed under the BSD Software License (see license.txt)      //
-////////////////////////////////////////////////////////////////////////////
-```
+# Java Implementation of Apple Lossless Decoder
+
+Copyright (c) 2011-2014 Peter McQuillan</br>
+All Rights Reserved.</br>
+Distributed under the BSD Software License (see [license.txt](license.txt))</br>
 
 This package contains a Java implementation of an Apple Lossless decoder.
 It is ported from v0.2.0 of the Apple Lossless decoder written by David Hammerton.
