@@ -1,29 +1,25 @@
-
 /*
-** DecoderDemo.java
-**
-** Copyright (c) 2011 Peter McQuillan
-**
-** All Rights Reserved.
-**                       
-** Distributed under the BSD Software License (see license.txt)  
-**
-*/
+ * Copyright (c) 2011 Peter McQuillan
+ *
+ * All Rights Reserved.
+ *
+ * Distributed under the BSD Software License (see license.txt)
+ */
+
 import com.beatofthedrum.alacdecoder.AlacContext;
 import com.beatofthedrum.alacdecoder.AlacUtils;
 import com.beatofthedrum.alacdecoder.WavWriter;
 
 
+/**
+ * DecoderDemo.
+ */
 class DecoderDemo {
 
     static java.io.FileOutputStream output_stream;
-
     static int output_opened;
-
     static int write_wav_format = 1;
-
     static String input_file_n = "";
-
     static String output_file_n = "";
 
     // Reformat samples from longs in processor's native endian mode to

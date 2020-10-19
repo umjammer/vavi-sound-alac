@@ -3,7 +3,7 @@
  *
  * All Rights Reserved.
  *
- * Distributed under the BSD Software License (see license.txt)  
+ * Distributed under the BSD Software License (see license.txt)
  */
 
 package com.beatofthedrum.alacdecoder;

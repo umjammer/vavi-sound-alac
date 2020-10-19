@@ -225,10 +225,12 @@ public class AlacUtils
 		/* calculate output size */
 		int num_samples = 0;
 		int thissample_duration;
-		int thissample_bytesize = 0;
+		@SuppressWarnings("unused")
+        int thissample_bytesize = 0;
 		SampleDuration sampleinfo = new SampleDuration();
 		int i;
-		boolean error_found = false;
+		@SuppressWarnings("unused")
+        boolean error_found = false;
 		int retval = 0;
 			
 		for (i = 0; i < ac.demux_res.sample_byte_size.length; i++)
@@ -290,7 +292,6 @@ public class AlacUtils
      * @param ac alac context
      * @param position position in pcm samples to go to
      */
-
     public static void AlacSetPosition(AlacContext ac, long position) {
         DemuxResT res = ac.demux_res;
 
