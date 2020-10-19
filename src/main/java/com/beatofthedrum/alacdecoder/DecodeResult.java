@@ -1,8 +1,8 @@
 package com.beatofthedrum.alacdecoder;
 
 /**
- * Author: Denis Tulskiy
- * Date: 4/9/11
+ * @author Denis Tulskiy
+ * @version 4/9/11
  */
 public class DecodeResult {
     public int bytesUnpacked;
