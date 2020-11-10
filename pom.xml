@@ -6,9 +6,9 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>soiaf</groupId>
-  <artifactId>apple-lossless-decoder</artifactId>
-  <version>0.3.0</version>
+  <groupId>vavi</groupId>
+  <artifactId>vavi-sound-alac</artifactId>
+  <version>0.3.1</version>
 
   <name>Java Implementation of Apple Lossless Decoder</name>
   <url>https://github.com/umjammer/Java-Apple-Lossless-decoder</url>
