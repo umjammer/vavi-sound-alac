@@ -1,4 +1,4 @@
-[![Release](https://jitpack.io/v/umjammer/Java-Apple-Lossless-decoder.svg)](https://jitpack.io/#umjammer/Java-Apple-Lossless-decoder) [![Parent](https://img.shields.io/badge/Parent-vavi--sound--sandbox-pink)](https://github.com/umjammer/vavi-sound-sandbox)
+[![Release](https://jitpack.io/v/umjammer/vavi-sound-alac.svg)](https://jitpack.io/#umjammer/vavi-sound-alac) [![Parent](https://img.shields.io/badge/Parent-vavi--sound--sandbox-pink)](https://github.com/umjammer/vavi-sound-sandbox)
 
 # vavi-sound-alac
 
