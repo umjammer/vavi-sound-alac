@@ -1,20 +1,23 @@
 /*
-** DemuxUtils.java
-**
-** Copyright (c) 2011-2014 Peter McQuillan
-**
-** All Rights Reserved.
-**                       
-** Distributed under the BSD Software License (see license.txt)  
-**
-*/
+ * Copyright (c) 2011-2014 Peter McQuillan
+ *
+ * All Rights Reserved.
+ *
+ * Distributed under the BSD Software License (see license.txt)  
+ */
 
 package com.beatofthedrum.alacdecoder;
 
+import java.util.logging.Logger;
 
+/**
+ * DemuxUtils
+ */
 class DemuxUtils
 {
-	public static int MakeFourCC(int ch0, int ch1, int ch2, int ch3)
+    private static Logger logger = Logger.getLogger(DemuxUtils.class.getName());
+
+    public static int MakeFourCC(int ch0, int ch1, int ch2, int ch3)
 	{
 		return ( ((ch0) << 24)| ((ch1) << 16)| ((ch2) << 8) | ((ch3)) );
 	}
@@ -82,7 +85,7 @@ class DemuxUtils
 			}
 			catch (Exception e)
 			{
-				System.err.println("(top) error reading chunk_len - possibly number too large");
+			    logger.warning("(top) error reading chunk_len - possibly number too large");
 				chunk_len = 1;
 			}
 			
@@ -93,7 +96,7 @@ class DemuxUtils
 
 			if (chunk_len == 1)
 			{
-				System.err.println("need 64bit support");
+			    logger.fine("need 64bit support");
 				return 0;
 			}
 			chunk_id = StreamUtils.stream_read_uint32(qtmovie.qtstream);
@@ -139,7 +142,7 @@ class DemuxUtils
 			}
 			else
 			{
-				System.err.println("(top) unknown chunk id: " + SplitFourCC(chunk_id));
+			    logger.fine("(top) unknown chunk id: " + SplitFourCC(chunk_id));
 				return 0;
 			}
 		}
@@ -158,7 +161,7 @@ class DemuxUtils
 
 		if(type != MakeFourCC32(77,52,65,32) )		// "M4A " ascii values
 		{
-			System.err.println("not M4A file");
+			logger.fine("not M4A file");
 			return;
 		}
 		minor_ver = StreamUtils.stream_read_uint32(qtmovie.qtstream);
@@ -272,7 +275,7 @@ class DemuxUtils
 		}
 		catch (Exception e)
 		{
-			System.err.println("(read_chunk_stsd) error reading numentries - possibly number too large");
+			logger.fine("(read_chunk_stsd) error reading numentries - possibly number too large");
 			numentries = 0;
 		}		
 		
@@ -281,7 +284,7 @@ class DemuxUtils
 
 		if (numentries != 1)
 		{
-			System.err.println("only expecting one entry in sample description atom!");
+			logger.fine("only expecting one entry in sample description atom!");
 			return 0;
 		}
 
@@ -300,7 +303,7 @@ class DemuxUtils
 
 			if(qtmovie.res.format != MakeFourCC32(97,108,97,99) )	// "alac" ascii values
 			{
-				System.err.println("(read_chunk_stsd) error reading description atom - expecting alac, got " + SplitFourCC(qtmovie.res.format));
+				logger.fine("(read_chunk_stsd) error reading description atom - expecting alac, got " + SplitFourCC(qtmovie.res.format));
 				return 0;
 			}
 
@@ -312,7 +315,7 @@ class DemuxUtils
 			version = StreamUtils.stream_read_uint16(qtmovie.qtstream);
 
 			if (version != 1)
-				System.err.println("unknown version??");
+				logger.fine("unknown version??");
 			entry_remaining -= 2;
 
 			/* revision level */
@@ -346,7 +349,7 @@ class DemuxUtils
 
 			if(qtmovie.res.codecdata_len > qtmovie.res.codecdata.length)
 			{
-                                System.err.println("(read_chunk_stsd) unexpected codec data length read from atom " + qtmovie.res.codecdata_len);
+                                logger.fine("(read_chunk_stsd) unexpected codec data length read from atom " + qtmovie.res.codecdata_len);
                                 return 0;
 			}
 
@@ -425,7 +428,7 @@ class DemuxUtils
 		}
 		catch (Exception e)
 		{
-			System.err.println("(read_chunk_stts) error reading numentries - possibly number too large");
+			logger.fine("(read_chunk_stts) error reading numentries - possibly number too large");
 			numentries = 0;
 		}
 
@@ -442,7 +445,7 @@ class DemuxUtils
 
 		if (size_remaining != 0)
 		{
-			System.err.println("(read_chunk_stts) size remaining?");
+			logger.fine("(read_chunk_stts) size remaining?");
 			StreamUtils.stream_skip(qtmovie.qtstream, size_remaining);
 		}
 	}
@@ -493,7 +496,7 @@ class DemuxUtils
 		}
 		catch (Exception e)
 		{
-			System.err.println("(read_chunk_stsz) error reading numentries - possibly number too large");
+			logger.fine("(read_chunk_stsz) error reading numentries - possibly number too large");
 			numentries = 0;
 		}
 
@@ -510,7 +513,7 @@ class DemuxUtils
 
 		if (size_remaining != 0)
 		{
-			System.err.println("(read_chunk_stsz) size remaining?");
+			logger.fine("(read_chunk_stsz) size remaining?");
 			StreamUtils.stream_skip(qtmovie.qtstream, size_remaining);
 		}
 	}
@@ -530,13 +533,13 @@ class DemuxUtils
 			}
 			catch (Exception e)
 			{
-				System.err.println("(read_chunk_stbl) error reading sub_chunk_len - possibly number too large");
+				logger.fine("(read_chunk_stbl) error reading sub_chunk_len - possibly number too large");
 				sub_chunk_len = 0;
 			}
 
 			if (sub_chunk_len <= 1 || sub_chunk_len > size_remaining)
 			{
-				System.err.println("strange size for chunk inside stbl " + sub_chunk_len + " (remaining: " + size_remaining + ")");
+				logger.fine("strange size for chunk inside stbl " + sub_chunk_len + " (remaining: " + size_remaining + ")");
 				return 0;
 			}
 
@@ -565,7 +568,7 @@ class DemuxUtils
 			}
 			else
 			{
-				System.err.println("(stbl) unknown chunk id: " + SplitFourCC(sub_chunk_id));
+				logger.fine("(stbl) unknown chunk id: " + SplitFourCC(sub_chunk_id));
 				return 0;
 			}
 
@@ -625,18 +628,18 @@ class DemuxUtils
 		}
 		catch (Exception e)
 		{
-			System.err.println("(read_chunk_minf) error reading media_info_size - possibly number too large");
+			logger.fine("(read_chunk_minf) error reading media_info_size - possibly number too large");
 			media_info_size = 0;
 		}
 				
 		if (media_info_size != 16)
 		{
-			System.err.println("unexpected size in media info\n");
+			logger.fine("unexpected size in media info\n");
 			return 0;
 		}
 		if (StreamUtils.stream_read_uint32(qtmovie.qtstream) != MakeFourCC32(115,109,104,100))	// "smhd" ascii values
 		{
-			System.err.println("not a sound header! can't handle this.");
+			logger.fine("not a sound header! can't handle this.");
 			return 0;
 		}
 		/* now skip the rest */
@@ -652,13 +655,13 @@ class DemuxUtils
 		}
 		catch (Exception e)
 		{
-			System.err.println("(read_chunk_minf) error reading dinf_size - possibly number too large");
+			logger.fine("(read_chunk_minf) error reading dinf_size - possibly number too large");
 			dinf_size = 0;
 		}	  
 
 		if (StreamUtils.stream_read_uint32(qtmovie.qtstream) != MakeFourCC32(100,105,110,102))	// "dinf" ascii values
 		{
-			System.err.println("expected dinf, didn't get it.");
+			logger.fine("expected dinf, didn't get it.");
 			return 0;
 		}
 		/* skip it */
@@ -674,13 +677,13 @@ class DemuxUtils
 		}
 		catch (Exception e)
 		{
-			System.err.println("(read_chunk_minf) error reading stbl_size - possibly number too large");
+			logger.fine("(read_chunk_minf) error reading stbl_size - possibly number too large");
 			stbl_size = 0;
 		}	
 		
 		if (StreamUtils.stream_read_uint32(qtmovie.qtstream) != MakeFourCC32(115,116,98,108))	// "stbl" ascii values
 		{
-			System.err.println("expected stbl, didn't get it.");
+			logger.fine("expected stbl, didn't get it.");
 			return 0;
 		}
 		if (read_chunk_stbl(qtmovie, stbl_size) == 0)
@@ -689,7 +692,7 @@ class DemuxUtils
 
 		if (size_remaining != 0)
 		{
-			System.err.println("(read_chunk_minf) - size remaining?");
+			logger.fine("(read_chunk_minf) - size remaining?");
 			StreamUtils.stream_skip(qtmovie.qtstream, size_remaining);
 		}
 
@@ -711,13 +714,13 @@ class DemuxUtils
 			}
 			catch (Exception e)
 			{
-				System.err.println("(read_chunk_mdia) error reading sub_chunk_len - possibly number too large");
+				logger.fine("(read_chunk_mdia) error reading sub_chunk_len - possibly number too large");
 				sub_chunk_len = 0;
 			}			
 
 			if (sub_chunk_len <= 1 || sub_chunk_len > size_remaining)
 			{
-				System.err.println("strange size for chunk inside mdia\n");
+				logger.fine("strange size for chunk inside mdia\n");
 				return 0;
 			}
 
@@ -738,7 +741,7 @@ class DemuxUtils
 			}
 			else
 			{
-				System.err.println("(mdia) unknown chunk id: " + SplitFourCC(sub_chunk_id));
+				logger.fine("(mdia) unknown chunk id: " + SplitFourCC(sub_chunk_id));
 				return 0;
 			}
 
@@ -764,13 +767,13 @@ class DemuxUtils
 			}
 			catch (Exception e)
 			{
-				System.err.println("(read_chunk_trak) error reading sub_chunk_len - possibly number too large");
+				logger.fine("(read_chunk_trak) error reading sub_chunk_len - possibly number too large");
 				sub_chunk_len = 0;
 			}			
 
 			if (sub_chunk_len <= 1 || sub_chunk_len > size_remaining)
 			{
-				System.err.println("strange size for chunk inside trak");
+				logger.fine("strange size for chunk inside trak");
 				return 0;
 			}
 
@@ -791,7 +794,7 @@ class DemuxUtils
 			}
 			else
 			{
-				System.err.println("(trak) unknown chunk id: " + SplitFourCC(sub_chunk_id));
+				logger.fine("(trak) unknown chunk id: " + SplitFourCC(sub_chunk_id));
 				return 0;
 			}
 
@@ -844,13 +847,13 @@ class DemuxUtils
 			}
 			catch (Exception e)
 			{
-				System.err.println("(read_chunk_moov) error reading sub_chunk_len - possibly number too large");
+				logger.fine("(read_chunk_moov) error reading sub_chunk_len - possibly number too large");
 				sub_chunk_len = 0;
 			}			
 
 			if (sub_chunk_len <= 1 || sub_chunk_len > size_remaining)
 			{
-				System.err.println("strange size for chunk inside moov");		
+				logger.fine("strange size for chunk inside moov");		
 				return 0;
 			}
 
@@ -883,7 +886,7 @@ class DemuxUtils
 			}
 			else
 			{
-				System.err.println("(moov) unknown chunk id: " + SplitFourCC(sub_chunk_id));
+				logger.fine("(moov) unknown chunk id: " + SplitFourCC(sub_chunk_id));
 				return 0;
 			}
 
@@ -918,7 +921,7 @@ class DemuxUtils
 
 		if (qtmovie.saved_mdat_pos == -1)
 		{
-			System.err.println("stream contains mdat before moov but is not seekable");
+			logger.fine("stream contains mdat before moov but is not seekable");
 			return 2;
 		}
 
