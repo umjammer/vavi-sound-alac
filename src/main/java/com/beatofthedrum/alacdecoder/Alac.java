@@ -21,7 +21,7 @@ import java.util.logging.Logger;
  */
 public class Alac {
 
-    private static Logger logger = Logger.getLogger(Alac.class.getName());
+    private static final Logger logger = Logger.getLogger(Alac.class.getName());
 
     private AlacContext ac;
 
@@ -73,7 +73,7 @@ try {
             // close the file and
             // skip bytes to go directly to that point
 
-            if (!FileInputStream.class.isInstance(is)) {
+            if (!(is instanceof FileInputStream)) {
                 ac.input_stream.reset();
             } else {
                 ac.input_stream.seek(0);

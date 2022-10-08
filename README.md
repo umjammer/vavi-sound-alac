@@ -1,11 +1,21 @@
-[![Release](https://jitpack.io/v/umjammer/vavi-sound-alac.svg)](https://jitpack.io/#umjammer/vavi-sound-alac) [![Parent](https://img.shields.io/badge/Parent-vavi--sound--sandbox-pink)](https://github.com/umjammer/vavi-sound-sandbox)
+[![Release](https://jitpack.io/v/umjammer/vavi-sound-alac.svg)](https://jitpack.io/#umjammer/vavi-sound-alac)
+[![Java CI](https://github.com/umjammer/vavi-sound-alac/actions/workflows/maven.yml/badge.svg)](https://github.com/umjammer/vavi-sound-alac/actions/workflows/maven.yml)
+[![CodeQL](https://github.com/umjammer/vavi-sound-alac/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/umjammer/vavi-sound-alac/actions/workflows/codeql-analysis.yml)
+![Java](https://img.shields.io/badge/Java-8-b07219)
+[![Parent](https://img.shields.io/badge/Parent-vavi--sound--sandbox-pink)](https://github.com/umjammer/vavi-sound-sandbox)
 
 # vavi-sound-alac
+
+<img src="https://user-images.githubusercontent.com/493908/194699473-aaee645a-d178-4d9f-b220-9de335bf4c62.png" width="320"/>
 
  * Java Implementation of Apple Lossless Decoder
  * **Now it works as `javax.sound.sampled.spi`!**
 
 this project is a fork of [soiaf/Java-Apple-Lossless-decoder](https://github.com/soiaf/Java-Apple-Lossless-decoder)
+
+## Install
+
+https://jitpack.io/#umjammer/vavi-sound-alac
 
 ## Original
 
