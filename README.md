@@ -1,6 +1,8 @@
 [![Release](https://jitpack.io/v/umjammer/vavi-sound-alac.svg)](https://jitpack.io/#umjammer/vavi-sound-alac)
-[![Parent](https://img.shields.io/badge/Parent-vavi--sound--sandbox-pink)](https://github.com/umjammer/vavi-sound-sandbox)
+[![Java CI](https://github.com/umjammer/vavi-sound-alac/actions/workflows/maven.yml/badge.svg)](https://github.com/umjammer/vavi-sound-alac/actions/workflows/maven.yml)
+[![CodeQL](https://github.com/umjammer/vavi-sound-alac/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/umjammer/vavi-sound-alac/actions/workflows/codeql-analysis.yml)
 ![Java](https://img.shields.io/badge/Java-8-b07219)
+[![Parent](https://img.shields.io/badge/Parent-vavi--sound--sandbox-pink)](https://github.com/umjammer/vavi-sound-sandbox)
 
 # vavi-sound-alac
 
