@@ -6,6 +6,8 @@
 
 # vavi-sound-alac
 
+<img src="https://user-images.githubusercontent.com/493908/194699473-aaee645a-d178-4d9f-b220-9de335bf4c62.png" width="320"/>
+
  * Java Implementation of Apple Lossless Decoder
  * **Now it works as `javax.sound.sampled.spi`!**
 
