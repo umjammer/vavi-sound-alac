@@ -135,7 +135,7 @@ class DecoderDemo {
         System.out.println("Options:");
         System.out.println("  -r                write output as raw PCM data. Default");
         System.out.println("                    is in WAV format.");
-        System.out.println("");
+        System.out.println();
         System.out.println("This port of the code is (c) Peter McQuillan 2011");
         System.out.println("Original software is (c) 2005 David Hammerton");
         System.exit(1);
@@ -188,7 +188,7 @@ class DecoderDemo {
 
         bitps = AlacUtils.AlacGetBitsPerSample(ac);
 
-        /* write wav output headers */
+        // write wav output headers
         if (write_wav_format != 0) {
             WavWriter.wavwriter_writeheaders(output_stream,
                                              (total_samples * byteps * num_channels),
@@ -198,7 +198,7 @@ class DecoderDemo {
                                              bitps);
         }
 
-        /* will convert the entire buffer */
+        // will convert the entire buffer
         GetBuffer(ac);
 
         AlacUtils.AlacCloseFile(ac);

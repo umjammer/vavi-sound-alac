@@ -10,6 +10,7 @@ import java.io.InputStream;
  * Date: 4/7/11
  */
 public class AlacInputStream extends DataInputStream {
+
     /**
      * Creates a DataInputStream that uses the specified
      * underlying InputStream.
