@@ -76,6 +76,7 @@ Debug.println(Level.FINE, "enter available: " + bitStream.available());
 Debug.println(Level.FINE, "error exit available: " + bitStream.available() + ", " + e.getMessage());
             throw (UnsupportedAudioFileException) new UnsupportedAudioFileException(e.getMessage()).initCause(e);
         }
+        // TODO AudioSystem.NOT_SPECIFIED cause IllegalArgumentException at Clip#open()
         AudioFormat format = new AudioFormat(AlacEncoding.ALAC, alac.getSampleRate(), alac.getBitsPerSample(), alac.getNumChannels(), AudioSystem.NOT_SPECIFIED, AudioSystem.NOT_SPECIFIED, true, new HashMap<String, Object>() {{ put("alac", alac); }});
         return new AudioFileFormat(AlacFileFormatType.ALAC, format, AudioSystem.NOT_SPECIFIED);
     }

@@ -11,10 +11,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.beatofthedrum.alacdecoder.Alac;
@@ -108,7 +111,7 @@ Debug.println(audioFormat);
         line.addLineListener(ev -> System.err.println(ev.getType()));
         line.start();
 
-        volume(line, .2d);
+        volume(line, .1d);
 
         byte[] pcmBuffer = null;
         int[] pDestBuffer = new int[1024 * 24 * 3]; // 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps)
@@ -164,7 +167,7 @@ Debug.println(audioFormat);
         line.addLineListener(ev -> System.err.println(ev.getType()));
         line.start();
 
-        volume(line, .2d);
+        volume(line, .1d);
 
         byte[] pcmBuffer = new byte[0xffff];
         int[] pDestBuffer = new int[1024 * 24 * 3]; // 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps)
