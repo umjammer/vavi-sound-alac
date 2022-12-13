@@ -64,7 +64,7 @@
     <dependency>
       <groupId>com.github.umjammer</groupId>
       <artifactId>vavi-sound</artifactId>
-      <version>1.0.14</version>
+      <version>1.0.15</version>
     </dependency>
 
     <dependency>
