@@ -8,7 +8,7 @@
 
   <groupId>vavi</groupId>
   <artifactId>vavi-sound-alac</artifactId>
-  <version>0.3.2</version>
+  <version>0.3.3</version>
 
   <name>Java Implementation of Apple Lossless Decoder</name>
   <url>https://github.com/umjammer/Java-Apple-Lossless-decoder</url>
