@@ -49,10 +49,10 @@ public class AlacFormatConversionProvider extends FormatConversionProvider {
             // TODO signed, endian should be free (means add more 3 patterns)
             return new AudioFormat[] {
                 new AudioFormat(sourceFormat.getSampleRate(),
-                                16,         // sample size in bits
+                                16, // sample size in bits
                                 sourceFormat.getChannels(),
-                                true,       // signed
-                                false)      // little endian (for PCM wav)
+                                true, // signed
+                                false) // little endian (for PCM wav)
             };
         } else {
             return new AudioFormat[0];

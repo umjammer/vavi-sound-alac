@@ -12,7 +12,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.logging.Level;
 
@@ -82,7 +81,7 @@ Debug.printStackTrace(Level.FINER, e);
             throw (UnsupportedAudioFileException) new UnsupportedAudioFileException(e.getMessage()).initCause(e);
         }
         // TODO AudioSystem.NOT_SPECIFIED cause IllegalArgumentException at Clip#open()
-        AudioFormat format = new AudioFormat(AlacEncoding.ALAC, alac.getSampleRate(), alac.getBitsPerSample(), alac.getNumChannels(), AudioSystem.NOT_SPECIFIED, AudioSystem.NOT_SPECIFIED, true, new HashMap<String, Object>() {{ put("alac", alac); }});
+        AudioFormat format = new AudioFormat(AlacEncoding.ALAC, alac.getSampleRate(), alac.getSampleSizeInBits(), alac.getChannels(), AudioSystem.NOT_SPECIFIED, AudioSystem.NOT_SPECIFIED, true, new HashMap<String, Object>() {{ put("alac", alac); }});
         return new AudioFileFormat(AlacFileFormatType.ALAC, format, AudioSystem.NOT_SPECIFIED);
     }
 

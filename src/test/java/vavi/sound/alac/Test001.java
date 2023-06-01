@@ -159,11 +159,11 @@ Debug.println(audioFormat);
         InputStream is = Files.newInputStream(Paths.get(alac));
 
         Alac decoder = new Alac(new BufferedInputStream(is, BUF_MAX));
-        int num_channels = decoder.getNumChannels();
+        int num_channels = decoder.getChannels();
         int total_samples = decoder.getNumSamples();
-        int byteps = decoder.getBytesPerSample();
+        int byteps = decoder.getFrameSize();
         int sample_rate = decoder.getSampleRate();
-        int bitps = decoder.getBitsPerSample();
+        int bitps = decoder.getSampleSizeInBits();
 Debug.println("num_channels: " + num_channels +
                    ", total_samples: " + total_samples +
                    ", byteps: " + byteps +

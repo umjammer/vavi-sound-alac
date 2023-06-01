@@ -33,12 +33,9 @@ class QTMovieT {
 
     /** */
     private static int makeFourCC32(int ch0, int ch1, int ch2, int ch3) {
-        int retval = 0;
-        int tmp = ch0;
 
-        retval = tmp << 24;
-
-        tmp = ch1;
+        int retval = ch0 << 24;
+        int tmp = ch1;
 
         retval = retval | (tmp << 16);
         tmp = ch2;
@@ -48,12 +45,12 @@ class QTMovieT {
 
         retval = retval | tmp;
 
-        return (retval);
+        return retval;
     }
 
     /** */
     private static int makeFourCC(int ch0, int ch1, int ch2, int ch3) {
-        return (((ch0) << 24) | ((ch1) << 16) | ((ch2) << 8) | ((ch3)));
+        return (ch0 << 24) | (ch1 << 16) | (ch2 << 8) | ch3;
     }
 
     /** */
@@ -112,8 +109,8 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
             int sub_chunk_id = 0;
 
             try {
-                sub_chunk_len = (this.qtstream.read_uint32());
-            } catch (Exception e) {
+                sub_chunk_len = this.qtstream.read_uint32();
+            } catch (IOException e) {
                 logger.fine("(read_chunk_moov) error reading sub_chunk_len - possibly number too large");
                 sub_chunk_len = 0;
             }
@@ -182,8 +179,8 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
             int sub_chunk_id = 0;
 
             try {
-                sub_chunk_len = (this.qtstream.read_uint32());
-            } catch (Exception e) {
+                sub_chunk_len = this.qtstream.read_uint32();
+            } catch (IOException e) {
                 logger.fine("(read_chunk_trak) error reading sub_chunk_len - possibly number too large");
                 sub_chunk_len = 0;
             }
@@ -221,7 +218,7 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
             int sub_chunk_id = 0;
 
             try {
-                sub_chunk_len = (this.qtstream.read_uint32());
+                sub_chunk_len = this.qtstream.read_uint32();
             } catch (IOException e) {
                 logger.fine("(read_chunk_mdia) error reading sub_chunk_len - possibly number too large");
                 sub_chunk_len = 0;
@@ -262,8 +259,8 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
         // SOUND HEADER CHUNK
 
         try {
-            media_info_size = (this.qtstream.read_uint32());
-        } catch (Exception e) {
+            media_info_size = this.qtstream.read_uint32();
+        } catch (IOException e) {
             logger.fine("(read_chunk_minf) error reading media_info_size - possibly number too large");
             media_info_size = 0;
         }
@@ -284,8 +281,8 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
 
         // DINF CHUNK
         try {
-            dinf_size = (this.qtstream.read_uint32());
-        } catch (Exception e) {
+            dinf_size = this.qtstream.read_uint32();
+        } catch (IOException e) {
             logger.fine("(read_chunk_minf) error reading dinf_size - possibly number too large");
             dinf_size = 0;
         }
@@ -368,7 +365,7 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
 
             try {
                 sub_chunk_len = this.qtstream.read_uint32();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 logger.fine("(read_chunk_stbl) error reading sub_chunk_len - possibly number too large");
                 sub_chunk_len = 0;
             }
@@ -438,8 +435,8 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
         size_remaining -= 4;
 
         try {
-            numentries = (this.qtstream.read_uint32());
-        } catch (Exception e) {
+            numentries = this.qtstream.read_uint32();
+        } catch (IOException e) {
             logger.fine("(read_chunk_stsz) error reading numentries - possibly number too large");
             numentries = 0;
         }
@@ -474,8 +471,8 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
         size_remaining -= 3;
 
         try {
-            numentries = (this.qtstream.read_uint32());
-        } catch (Exception e) {
+            numentries = this.qtstream.read_uint32();
+        } catch (IOException e) {
             logger.fine("(read_chunk_stts) error reading numentries - possibly number too large");
             numentries = 0;
         }
@@ -485,8 +482,8 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
         this.res.num_time_to_samples = numentries;
 
         for (int i = 0; i < numentries; i++) {
-            this.res.time_to_sample[i].sample_count = (this.qtstream.read_uint32());
-            this.res.time_to_sample[i].sample_duration = (this.qtstream.read_uint32());
+            this.res.time_to_sample[i].sample_count = this.qtstream.read_uint32();
+            this.res.time_to_sample[i].sample_duration = this.qtstream.read_uint32();
             size_remaining -= 8;
         }
 
@@ -510,8 +507,8 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
         size_remaining -= 3;
 
         try {
-            numentries = (this.qtstream.read_uint32());
-        } catch (Exception e) {
+            numentries = this.qtstream.read_uint32();
+        } catch (IOException e) {
             logger.fine("(read_chunk_stsd) error reading numentries - possibly number too large");
             numentries = 0;
         }
@@ -530,7 +527,7 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
 
             int entry_remaining;
 
-            entry_size = (this.qtstream.read_uint32());
+            entry_size = this.qtstream.read_uint32();
             this.res.format = this.qtstream.read_uint32();
             entry_remaining = entry_size;
             entry_remaining -= 8;
@@ -638,11 +635,7 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
 
     /** media handler inside mdia */
     void read_chunk_hdlr(int chunk_len) throws IOException {
-        int comptype = 0;
-        int compsubtype = 0;
         int size_remaining = chunk_len - 8; // FIXME WRONG
-
-        int strlen;
 
         // version
         this.qtstream.read_uint8();
@@ -654,8 +647,8 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
         size_remaining -= 3;
 
         // component type
-        comptype = this.qtstream.read_uint32();
-        compsubtype = this.qtstream.read_uint32();
+        int comptype = this.qtstream.read_uint32();
+        int compsubtype = this.qtstream.read_uint32();
         size_remaining -= 8;
 
         // component manufacturer
@@ -668,7 +661,7 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
         size_remaining -= 8;
 
         // name
-        strlen = this.qtstream.read_uint8();
+        int strlen = this.qtstream.read_uint8();
 
         // rewrote this to handle case where we actually read more than required
 		// so here we work out how much we need to read first
@@ -708,18 +701,16 @@ logger.finer("saved_mdat_pos: " + saved_mdat_pos);
 
     /** chunk handlers */
     void read_chunk_ftyp(int chunk_len) throws IOException {
-        int type = 0;
-        int minor_ver = 0;
         int size_remaining = chunk_len - 8; // FIXME: can't hardcode 8, size may be 64bit
 
-        type = this.qtstream.read_uint32();
+        int type = this.qtstream.read_uint32();
         size_remaining -= 4;
 
         if (type != makeFourCC32(77, 52, 65, 32)) { // "M4A " ascii values
             logger.fine("not M4A file");
             return;
         }
-        minor_ver = this.qtstream.read_uint32();
+        int minor_ver = this.qtstream.read_uint32();
         size_remaining -= 4;
 
         // compatible brands
@@ -750,7 +741,7 @@ logger.finer("available: " + this.qtstream.stream.available());
 
             try {
                 chunk_len = this.qtstream.read_uint32();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 logger.warning("(top) error reading chunk_len - possibly number too large");
                 chunk_len = 1;
             }

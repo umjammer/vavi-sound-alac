@@ -29,7 +29,7 @@ public class AlacContext {
      * @author Denis Tulskiy
      * @since 4/7/11
      */
-    static class AlacInputStream extends DataInputStream {
+    private static class AlacInputStream extends DataInputStream {
 
         int total;
 
@@ -63,10 +63,10 @@ logger.fine("reset: " + in.available());
     DemuxResT demux_res;
     AlacFile file;
     AlacInputStream input_stream;
-    int current_sample_block = 0;
-    int offset;
+    private int current_sample_block = 0;
+    private int offset;
     /** sample big enough to hold any input for a single file frame */
-    byte[] read_buffer = new byte[1024 * 80];
+    private byte[] read_buffer = new byte[1024 * 80];
 
     /** old original factory */
     public static AlacContext openFileInput(File inputfile) throws IOException {
@@ -171,19 +171,16 @@ logger.fine("reset: " + in.available());
     public int getNumSamples() throws IOException {
         // calculate output size
         int num_samples = 0;
-        int thissample_duration;
-        @SuppressWarnings("unused")
-        int thissample_bytesize = 0;
-        DemuxResT.SampleDuration sampleinfo = new DemuxResT.SampleDuration();
-        int i;
         @SuppressWarnings("unused")
         boolean error_found = false;
+        @SuppressWarnings("unused")
         int retval = 0;
 
-        for (i = 0; i < this.demux_res.sample_byte_size.length; i++) {
-            thissample_duration = 0;
-            thissample_bytesize = 0;
+        for (int i = 0; i < this.demux_res.sample_byte_size.length; i++) {
+            int thissample_duration = 0;
+            int thissample_bytesize = 0;
 
+            DemuxResT.SampleDuration sampleinfo = new DemuxResT.SampleDuration();
             this.demux_res.get_sample_info(i, sampleinfo);
             thissample_duration = sampleinfo.sample_duration;
             thissample_bytesize = sampleinfo.sample_byte_size;

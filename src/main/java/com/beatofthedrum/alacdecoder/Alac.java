@@ -10,9 +10,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Logger;
-
-import vavi.util.Debug;
-import vavi.util.StringUtil;
+import javax.sound.sampled.AudioFormat;
 
 
 /**
@@ -34,7 +32,6 @@ public class Alac implements AutoCloseable {
      *           mark might not work well.
      */
     public Alac(InputStream is) throws IOException {
-Debug.println(StringUtil.paramString(is));
         context = new AlacContext();
 
         if (!(is instanceof FileInputStream) && !is.markSupported()) {
@@ -115,29 +112,37 @@ logger.fine("seek: 0");
     public int decode(int[] pDestBuffer, byte[] pcmBuffer) throws IOException {
         int bytes_unpacked = context.unpackSamples(pDestBuffer);
         if (bytes_unpacked > 0) {
-            formatSamples(pcmBuffer, getBytesPerSample(), pDestBuffer, bytes_unpacked);
+            formatSamples(pcmBuffer, getFrameSize(), pDestBuffer, bytes_unpacked);
         }
         return bytes_unpacked;
     }
 
-    /** Returns the sample rate of the specified ALAC file */
+    /**
+     * Returns the sample rate of the specified ALAC file
+     * @see javax.sound.sampled.AudioFormat#getSampleRate()
+     */
     public int getSampleRate() {
         return context.getSampleRate();
     }
 
-    /** */
-    public int getNumChannels() {
+    /** @see javax.sound.sampled.AudioFormat#getChannels() */
+    public int getChannels() {
         return context.getNumChannels();
     }
 
-    /** */
-    public int getBitsPerSample() {
+    /** @see AudioFormat#getSampleSizeInBits() */
+    public int getSampleSizeInBits() {
         return context.getBitsPerSample();
     }
 
-    /** */
-    public int getBytesPerSample() {
+    /** @see javax.sound.sampled.AudioFormat#getFrameSize() */
+    public int getFrameSize() {
         return context.getBytesPerSample();
+    }
+
+    /** @see javax.sound.sampled.AudioFormat#getFrameRate() */
+    public int getFrameRate() {
+        return context.getSampleRate();
     }
 
     /** Get total number of samples contained in the Apple Lossless file, or -1 if unknown */

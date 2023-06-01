@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ServiceLoader;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.AudioFormat;
@@ -19,6 +20,7 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
+import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.sound.sampled.spi.AudioFileReader;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import vavi.sound.SoundUtil;
 import vavi.sound.sampled.alac.AlacAudioFileReader;
 import vavi.sound.sampled.alac.AlacFormatConversionProvider;
 import vavi.util.Debug;
@@ -184,6 +187,7 @@ Debug.println("OUT: " + outAudioFormat);
     }
 
     @Test
+    @DisplayName("three input types")
     void test4() throws Exception {
         Path path = Paths.get(alac);
         AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(path), BUF_MAX));
@@ -195,6 +199,7 @@ Debug.println("OUT: " + outAudioFormat);
     }
 
     @Test
+    @DisplayName("when unsupported file coming")
     void test5() throws Exception {
         InputStream is = AlacFormatConversionProviderTest.class.getResourceAsStream("/test.caf");
         int available = is.available();
@@ -207,13 +212,32 @@ Debug.println(ais.getFormat());
     }
 
     @Test
-    @Disabled("TODO? java.lang.IllegalArgumentException: invalid frame size: NOT_SPECIFIED")
+    @DisplayName("clip")
     void test3() throws Exception {
-        Path path = Paths.get(alac);
-        AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(path)));
+
+        AudioInputStream ais = AudioSystem.getAudioInputStream(Paths.get(alac).toFile());
+Debug.println(ais.getFormat());
+
         Clip clip = AudioSystem.getClip();
-        clip.open(ais);
-        clip.loop(1);
+CountDownLatch cdl = new CountDownLatch(1);
+clip.addLineListener(ev -> {
+ Debug.println(ev.getType());
+ if (ev.getType() == LineEvent.Type.STOP)
+  cdl.countDown();
+});
+        clip.open(AudioSystem.getAudioInputStream(new AudioFormat(44100, 16, 2, true, false), ais));
+SoundUtil.volume(clip, 0.1f);
+        clip.start();
+if (!System.getProperty("vavi.test", "").equals("ide")) {
+ Thread.sleep(10 * 1000);
+ clip.stop();
+ Debug.println("Interrupt");
+} else {
+ cdl.await();
+}
+        clip.drain();
+        clip.stop();
+        clip.close();
     }
 }
 

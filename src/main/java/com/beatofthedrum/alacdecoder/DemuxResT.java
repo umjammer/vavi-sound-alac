@@ -34,6 +34,7 @@ class DemuxResT {
         int sample_desc_index;
     }
 
+    /** */
     static class SampleDuration {
         int sample_byte_size = 0;
         int sample_duration = 0;
@@ -45,7 +46,7 @@ class DemuxResT {
     int sample_size;
     int sample_rate;
     int format;
-    int[] buf = new int[1024 * 80];
+    private int[] buf = new int[1024 * 80];
 
     SampleInfo[] time_to_sample = new SampleInfo[16];
     int num_time_to_samples;
