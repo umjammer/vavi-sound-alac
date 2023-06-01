@@ -67,13 +67,13 @@ public class AlacAudioFileReader extends AudioFileReader {
      * @exception IOException if an I/O exception occurs.
      */
     protected AudioFileFormat getAudioFileFormat(InputStream bitStream, int mediaLength) throws UnsupportedAudioFileException, IOException {
-//Debug.println("here: " + bitStream.markSupported());
 Debug.println(Level.FINE, "enter available: " + bitStream.available());
         Alac alac;
         try {
             alac = new Alac(bitStream);
         } catch (IOException e) {
-Debug.println(Level.FINE, "error exit available: " + bitStream.available() + ", " + e.getMessage());
+Debug.println(Level.FINE, "error exit available: " + bitStream.available());
+Debug.printStackTrace(Level.FINE, e);
             throw (UnsupportedAudioFileException) new UnsupportedAudioFileException(e.getMessage()).initCause(e);
         }
         // TODO AudioSystem.NOT_SPECIFIED cause IllegalArgumentException at Clip#open()

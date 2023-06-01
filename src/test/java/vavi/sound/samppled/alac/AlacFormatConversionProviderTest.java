@@ -16,20 +16,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.spi.AudioFileReader;
 import javax.sound.sampled.spi.FormatConversionProvider;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import vavi.sound.sampled.alac.AlacAudioFileReader;
 import vavi.sound.sampled.alac.AlacFormatConversionProvider;
 import vavi.util.Debug;
+import vavi.util.properties.annotation.Property;
+import vavi.util.properties.annotation.PropsEntity;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static vavi.sound.SoundUtil.volume;
+import static vavix.util.DelayedWorker.later;
 
 
 /**
@@ -38,13 +44,30 @@ import static vavi.sound.SoundUtil.volume;
  * @author <a href="mailto:umjammer@gmail.com">Naohide Sano</a> (umjammer)
  * @version 0.00 2022/02/20 umjammer initial version <br>
  */
+@PropsEntity(url = "file:local.properties")
 class AlacFormatConversionProviderTest {
+
+    static boolean localPropertiesExists() {
+        return Files.exists(Paths.get("local.properties"));
+    }
+
+    @BeforeEach
+    void setup() throws Exception {
+        if (localPropertiesExists()) {
+            PropsEntity.Util.bind(this);
+        }
+    }
+
+    static long time;
 
     static {
         System.setProperty("vavi.util.logging.VaviFormatter.extraClassMethod", "org\\.tritonus\\.share\\.TDebug#out");
+
+        time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 10 * 1000;
     }
 
-    static final String inFile = "/alac.m4a";
+    @Property
+    String alac = "src/test/resources/alac.m4a";
 
     @Test
     void testX() throws Exception {
@@ -73,7 +96,7 @@ System.err.println(spi);
     @DisplayName("directly")
     void test0() throws Exception {
 
-        Path path = Paths.get(AlacFormatConversionProviderTest.class.getResource(inFile).toURI());
+        Path path = Paths.get(alac);
         AudioInputStream sourceAis = new AlacAudioFileReader().getAudioInputStream(new BufferedInputStream(Files.newInputStream(path)));
 
         AudioFormat inAudioFormat = sourceAis.getFormat();
@@ -98,7 +121,7 @@ Debug.println("OUT: " + outAudioFormat);
         volume(line, .2d);
 
         byte[] buf = new byte[1024];
-        while (true) {
+        while (!later(time).come()) {
             int r = pcmAis.read(buf, 0, 1024);
             if (r < 0) {
                 break;
@@ -114,7 +137,7 @@ Debug.println("OUT: " + outAudioFormat);
     @DisplayName("as spi")
     void test1() throws Exception {
 
-        Path path = Paths.get(AlacFormatConversionProviderTest.class.getResource(inFile).toURI());
+        Path path = Paths.get(alac);
         AudioInputStream sourceAis = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(path)));
 
         AudioFormat inAudioFormat = sourceAis.getFormat();
@@ -139,7 +162,7 @@ Debug.println("OUT: " + outAudioFormat);
         volume(line, .2d);
 
         byte[] buf = new byte[1024];
-        while (true) {
+        while (!later(time).come()) {
             int r = pcmAis.read(buf, 0, 1024);
             if (r < 0) {
                 break;
@@ -149,6 +172,16 @@ Debug.println("OUT: " + outAudioFormat);
         line.drain();
         line.stop();
         line.close();
+    }
+
+    @Test
+    @Disabled("TODO? java.lang.IllegalArgumentException: invalid frame size: NOT_SPECIFIED")
+    void test3() throws Exception {
+        Path path = Paths.get(alac);
+        AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(path)));
+        Clip clip = AudioSystem.getClip();
+        clip.open(ais);
+        clip.loop(1);
     }
 }
 

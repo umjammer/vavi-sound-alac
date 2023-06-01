@@ -68,7 +68,7 @@ class Alac2PcmAudioInputStream extends AudioInputStream {
                 throw new IOException("Not yet initialized");
             } else {
                 int bytesUnpacked = alac.decode(pDestBuffer, pcmBuffer);
-                if (bytesUnpacked == 0) {
+                if (bytesUnpacked == -1) {
                     out.close();
                 } else {
                     out.write(pcmBuffer, 0, bytesUnpacked);
@@ -78,7 +78,7 @@ class Alac2PcmAudioInputStream extends AudioInputStream {
 
         /** */
         public void finish() throws IOException {
-            alac.getInputStream().close();
+            alac.close();
         }
     }
 }
