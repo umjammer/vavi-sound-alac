@@ -6,24 +6,26 @@
 
 package vavi.sound.alac;
 
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 
-import org.junit.jupiter.api.Test;
-
 import com.beatofthedrum.alacdecoder.Alac;
 import com.beatofthedrum.alacdecoder.AlacContext;
-import com.beatofthedrum.alacdecoder.AlacUtils;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import vavi.util.Debug;
+import vavi.util.properties.annotation.Property;
+import vavi.util.properties.annotation.PropsEntity;
 
 import static vavi.sound.SoundUtil.volume;
+import static vavix.util.DelayedWorker.later;
 
 
 /**
@@ -32,7 +34,25 @@ import static vavi.sound.SoundUtil.volume;
  * @author <a href="mailto:umjammer@gmail.com">Naohide Sano</a> (nsano)
  * @version 0.00 111022 nsano initial version <br>
  */
+@PropsEntity(url = "file:local.properties")
 class Test001 {
+
+    static boolean localPropertiesExists() {
+        return Files.exists(Paths.get("local.properties"));
+    }
+
+    @BeforeEach
+    void setup() throws Exception {
+        if (localPropertiesExists()) {
+            PropsEntity.Util.bind(this);
+        }
+    }
+
+    static long time;
+
+    static {
+        time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 9 * 1000;
+    }
 
     byte[] format_samples(int bps, int[] src, int samcnt) {
         int temp = 0;
@@ -72,20 +92,19 @@ class Test001 {
         return dst;
     }
 
-    static final String inFile = "src/test/resources/alac.m4a";
+    @Property
+    String alac = "src/test/resources/alac.m4a";
 
     @Test
+    @DisplayName("proto 1")
     void test1() throws Exception {
 
-        AlacContext ac = AlacUtils.AlacOpenFileInput(inFile);
-        if (ac.error) {
-            throw new IllegalStateException(ac.error_message);
-        }
-        int num_channels = AlacUtils.AlacGetNumChannels(ac);
-        int total_samples = AlacUtils.AlacGetNumSamples(ac);
-        int byteps = AlacUtils.AlacGetBytesPerSample(ac);
-        int sample_rate = AlacUtils.AlacGetSampleRate(ac);
-        int bitps = AlacUtils.AlacGetBitsPerSample(ac);
+        AlacContext ac = AlacContext.openFileInput(Paths.get(alac).toFile());
+        int num_channels = ac.getNumChannels();
+        int total_samples = ac.getNumSamples();
+        int byteps = ac.getBytesPerSample();
+        int sample_rate = ac.getSampleRate();
+        int bitps = ac.getBitsPerSample();
 Debug.println("num_channels: " + num_channels +
                    ", total_samples: " + total_samples +
                    ", byteps: " + byteps +
@@ -105,22 +124,21 @@ Debug.println(audioFormat);
         DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
         SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
         line.open(audioFormat);
-        line.addLineListener(ev -> System.err.println(ev.getType()));
+        line.addLineListener(ev -> Debug.println(ev.getType()));
         line.start();
 
-        volume(line, .2d);
+        volume(line, .1d);
 
         byte[] pcmBuffer = null;
         int[] pDestBuffer = new int[1024 * 24 * 3]; // 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps)
-        int bps = AlacUtils.AlacGetBytesPerSample(ac);
-        while (true) {
-            int bytes_unpacked = AlacUtils.AlacUnpackSamples(ac, pDestBuffer);
+        int bps = ac.getBytesPerSample();
+        while (!later(time).come()) {
+            int bytes_unpacked = ac.unpackSamples(pDestBuffer);
+            if (bytes_unpacked == -1) {
+                break;
+            }
             if (bytes_unpacked > 0) {
                 pcmBuffer = format_samples(bps, pDestBuffer, bytes_unpacked);
-            }
-
-            if (bytes_unpacked == 0) {
-                break;
             }
 
             line.write(pcmBuffer, 0, bytes_unpacked);
@@ -129,19 +147,23 @@ Debug.println(audioFormat);
         line.stop();
         line.close();
 
-        AlacUtils.AlacCloseFile(ac);
+        ac.close();
     }
 
-    @Test
-    void test2() throws Exception {
-        InputStream is = Files.newInputStream(Paths.get(inFile));
+    // @see BufferedInputStream
+    static final int BUF_MAX = Integer.MAX_VALUE - 8;
 
-        Alac decoder = new Alac(is);
-        int num_channels = decoder.getNumChannels();
+    @Test
+    @DisplayName("proto 2")
+    void test2() throws Exception {
+        InputStream is = Files.newInputStream(Paths.get(alac));
+
+        Alac decoder = new Alac(new BufferedInputStream(is, BUF_MAX));
+        int num_channels = decoder.getChannels();
         int total_samples = decoder.getNumSamples();
-        int byteps = decoder.getBytesPerSample();
+        int byteps = decoder.getFrameSize();
         int sample_rate = decoder.getSampleRate();
-        int bitps = decoder.getBitsPerSample();
+        int bitps = decoder.getSampleSizeInBits();
 Debug.println("num_channels: " + num_channels +
                    ", total_samples: " + total_samples +
                    ", byteps: " + byteps +
@@ -161,16 +183,16 @@ Debug.println(audioFormat);
         DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
         SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
         line.open(audioFormat);
-        line.addLineListener(ev -> System.err.println(ev.getType()));
+        line.addLineListener(ev -> Debug.println(ev.getType()));
         line.start();
 
-        volume(line, .2d);
+        volume(line, .1d);
 
         byte[] pcmBuffer = new byte[0xffff];
         int[] pDestBuffer = new int[1024 * 24 * 3]; // 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps)
-        while (true) {
+        while (!later(time).come()) {
             int bytes_unpacked = decoder.decode(pDestBuffer, pcmBuffer);
-            if (bytes_unpacked == 0) {
+            if (bytes_unpacked == -1) {
                 break;
             }
 //Debug.println("bytes_unpacked: " + bytes_unpacked + "\n" + StringUtil.getDump(pcmBuffer, 64));

@@ -6,8 +6,10 @@
  * Distributed under the BSD Software License (see license.txt)
  */
 
+import java.io.IOException;
+import java.nio.file.Paths;
+
 import com.beatofthedrum.alacdecoder.AlacContext;
-import com.beatofthedrum.alacdecoder.AlacUtils;
 import com.beatofthedrum.alacdecoder.WavWriter;
 
 
@@ -22,9 +24,10 @@ class DecoderDemo {
     static String input_file_n = "";
     static String output_file_n = "";
 
-    // Reformat samples from longs in processor's native endian mode to
-    // little-endian data with (possibly) less than 3 bytes / sample.
-
+    /**
+     * Reformat samples from longs in processor's native endian mode to
+     * little-endian data with (possibly) less than 3 bytes / sample.
+     */
     public static byte[] format_samples(int bps, int[] src, int samcnt) {
         int temp = 0;
         int counter = 0;
@@ -97,7 +100,7 @@ class DecoderDemo {
 
     }
 
-    static void GetBuffer(AlacContext ac) {
+    static void getBuffer(AlacContext ac) throws IOException {
         int destBufferSize = 1024 * 24 * 3; // 24kb buffer = 4096 frames = 1
                                             // alac sample (we support max
                                             // 24bps)
@@ -107,10 +110,12 @@ class DecoderDemo {
 
         int[] pDestBuffer = new int[destBufferSize];
 
-        int bps = AlacUtils.AlacGetBytesPerSample(ac);
+        int bps = ac.getBytesPerSample();
 
         while (true) {
-            bytes_unpacked = AlacUtils.AlacUnpackSamples(ac, pDestBuffer);
+            bytes_unpacked = ac.unpackSamples(pDestBuffer);
+            if (bytes_unpacked == -1)
+                break;
 
             total_unpacked_bytes += bytes_unpacked;
 
@@ -122,11 +127,7 @@ class DecoderDemo {
                     System.err.println("Error writing data to output file. Error: " + ioe);
                 }
             }
-
-            if (bytes_unpacked == 0)
-                break;
         } // end of while
-
     }
 
     static void usage() {
@@ -141,8 +142,8 @@ class DecoderDemo {
         System.exit(1);
     }
 
-    public static void main(String[] args) {
-        AlacContext ac = new AlacContext();
+    public static void main(String[] args) throws IOException {
+        AlacContext ac;
         int output_size;
         int total_samples;
         int sample_rate;
@@ -164,29 +165,23 @@ class DecoderDemo {
             System.exit(1);
         }
 
-        ac = AlacUtils.AlacOpenFileInput(input_file_n);
+        ac = AlacContext.openFileInput(Paths.get(input_file_n).toFile());
 
-        if (ac.error) {
-            System.err.println("Sorry an error has occured");
-            System.err.println(ac.error_message);
-            System.exit(1);
-        }
-
-        num_channels = AlacUtils.AlacGetNumChannels(ac);
+        num_channels = ac.getNumChannels();
 
         System.out.println("The Apple Lossless file has " + num_channels + " channels");
 
-        total_samples = AlacUtils.AlacGetNumSamples(ac);
+        total_samples = ac.getNumSamples();
 
         System.out.println("The Apple Lossless file has " + total_samples + " samples");
 
-        byteps = AlacUtils.AlacGetBytesPerSample(ac);
+        byteps = ac.getBytesPerSample();
 
         System.out.println("The Apple Lossless file has " + byteps + " bytes per sample");
 
-        sample_rate = AlacUtils.AlacGetSampleRate(ac);
+        sample_rate = ac.getSampleRate();
 
-        bitps = AlacUtils.AlacGetBitsPerSample(ac);
+        bitps = ac.getBitsPerSample();
 
         // write wav output headers
         if (write_wav_format != 0) {
@@ -199,15 +194,12 @@ class DecoderDemo {
         }
 
         // will convert the entire buffer
-        GetBuffer(ac);
+        getBuffer(ac);
 
-        AlacUtils.AlacCloseFile(ac);
+        ac.close();
 
         if (output_opened != 0) {
-            try {
-                output_stream.close();
-            } catch (java.io.IOException ioe) {
-            }
+            output_stream.close();
         }
     }
 }

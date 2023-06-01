@@ -6,11 +6,12 @@
 
 package vavi.sound.sampled.alac;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.logging.Level;
 
@@ -38,7 +39,8 @@ public class AlacAudioFileReader extends AudioFileReader {
 
     @Override
     public AudioFileFormat getAudioFileFormat(File file) throws UnsupportedAudioFileException, IOException {
-        try (InputStream inputStream = Files.newInputStream(file.toPath())) {
+        //noinspection IOStreamConstructor
+        try (InputStream inputStream = new FileInputStream(file)) { // must be FileInputStream
             return getAudioFileFormat(inputStream, (int) file.length());
         }
     }
@@ -46,10 +48,11 @@ public class AlacAudioFileReader extends AudioFileReader {
     @Override
     public AudioFileFormat getAudioFileFormat(URL url) throws UnsupportedAudioFileException, IOException {
         try (InputStream inputStream = url.openStream()) {
-            return getAudioFileFormat(inputStream);
+            return getAudioFileFormat(inputStream instanceof BufferedInputStream ? inputStream : new BufferedInputStream(inputStream, Integer.MAX_VALUE - 8));
         }
     }
 
+    /** @param stream mark must be supported and mark size must be larger than the alac data size */
     @Override
     public AudioFileFormat getAudioFileFormat(InputStream stream) throws UnsupportedAudioFileException, IOException {
         return getAudioFileFormat(stream, AudioSystem.NOT_SPECIFIED);
@@ -62,27 +65,30 @@ public class AlacAudioFileReader extends AudioFileReader {
      * @param mediaLength
      * @return an AudioInputStream object based on the audio file data contained
      *         in the input stream.
+     *         mark must be supported and mark size must be larger than the alac data size
      * @exception UnsupportedAudioFileException if the File does not point to a
      *                valid audio file data recognized by the system.
      * @exception IOException if an I/O exception occurs.
      */
     protected AudioFileFormat getAudioFileFormat(InputStream bitStream, int mediaLength) throws UnsupportedAudioFileException, IOException {
-//Debug.println("here: " + bitStream.markSupported());
 Debug.println(Level.FINE, "enter available: " + bitStream.available());
         Alac alac;
         try {
             alac = new Alac(bitStream);
         } catch (IOException e) {
-Debug.println(Level.FINE, "error exit available: " + bitStream.available() + ", " + e.getMessage());
+Debug.println(Level.FINE, "error exit available: " + bitStream.available());
+Debug.printStackTrace(Level.FINER, e);
             throw (UnsupportedAudioFileException) new UnsupportedAudioFileException(e.getMessage()).initCause(e);
         }
-        AudioFormat format = new AudioFormat(AlacEncoding.ALAC, alac.getSampleRate(), alac.getBitsPerSample(), alac.getNumChannels(), AudioSystem.NOT_SPECIFIED, AudioSystem.NOT_SPECIFIED, true, new HashMap<String, Object>() {{ put("alac", alac); }});
+        // TODO AudioSystem.NOT_SPECIFIED cause IllegalArgumentException at Clip#open()
+        AudioFormat format = new AudioFormat(AlacEncoding.ALAC, alac.getSampleRate(), alac.getSampleSizeInBits(), alac.getChannels(), AudioSystem.NOT_SPECIFIED, AudioSystem.NOT_SPECIFIED, true, new HashMap<String, Object>() {{ put("alac", alac); }});
         return new AudioFileFormat(AlacFileFormatType.ALAC, format, AudioSystem.NOT_SPECIFIED);
     }
 
     @Override
     public AudioInputStream getAudioInputStream(File file) throws UnsupportedAudioFileException, IOException {
-        InputStream inputStream = Files.newInputStream(file.toPath());
+        //noinspection IOStreamConstructor
+        InputStream inputStream = new FileInputStream(file); // must be FileInputStream
         try {
             return getAudioInputStream(inputStream, (int) file.length());
         } catch (UnsupportedAudioFileException | IOException e) {
@@ -95,7 +101,7 @@ Debug.println(Level.FINE, "error exit available: " + bitStream.available() + ", 
     public AudioInputStream getAudioInputStream(URL url) throws UnsupportedAudioFileException, IOException {
         InputStream inputStream = url.openStream();
         try {
-            return getAudioInputStream(inputStream);
+            return getAudioInputStream(inputStream instanceof BufferedInputStream ? inputStream : new BufferedInputStream(inputStream, Integer.MAX_VALUE - 8));
         } catch (UnsupportedAudioFileException | IOException e) {
             inputStream.close();
             throw e;

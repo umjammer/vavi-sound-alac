@@ -48,11 +48,11 @@ public class WavWriter {
     public static void wavwriter_writeheaders(java.io.FileOutputStream f, int datasize, int numchannels, int samplerate, int bytespersample, int bitspersample) {
         byte[] buffAsBytes = new byte[4];
 
-        /* write RIFF header */
+        // write RIFF header
         buffAsBytes[0] = 82;
         buffAsBytes[1] = 73;
         buffAsBytes[2] = 70;
-        buffAsBytes[3] = 70;    // "RIFF" ascii values
+        buffAsBytes[3] = 70; // "RIFF" ascii values
 
         try {
             f.write(buffAsBytes, 0, 4);
@@ -64,7 +64,7 @@ public class WavWriter {
         buffAsBytes[0] = 87;
         buffAsBytes[1] = 65;
         buffAsBytes[2] = 86;
-        buffAsBytes[3] = 69;   // "WAVE" ascii values
+        buffAsBytes[3] = 69; // "WAVE" ascii values
 
         try {
             f.write(buffAsBytes, 0, 4);
@@ -72,7 +72,7 @@ public class WavWriter {
 			logger.fine(ioe.toString());
         }
 
-        /* write fmt header */
+        // write fmt header
         buffAsBytes[0] = 102;
         buffAsBytes[1] = 109;
         buffAsBytes[2] = 116;
