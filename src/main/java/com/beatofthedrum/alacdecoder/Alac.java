@@ -6,11 +6,13 @@
 
 package com.beatofthedrum.alacdecoder;
 
-import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Logger;
+
+import vavi.util.Debug;
+import vavi.util.StringUtil;
 
 
 /**
@@ -27,21 +29,27 @@ public class Alac implements AutoCloseable {
 
     /**
      * Creates ALAC decoder.
+     * @param is accepts only FileInputStream or InputStream which supports mark
+     *           if "moov" chank in the alac mp4 container is located at back of data,
+     *           mark might not work well.
      */
     public Alac(InputStream is) throws IOException {
+Debug.println(StringUtil.paramString(is));
         context = new AlacContext();
 
-        if (!is.markSupported()) {
-            is = new BufferedInputStream(is);
+        if (!(is instanceof FileInputStream) && !is.markSupported()) {
+            throw new IllegalArgumentException("is must be mark supported or FileInputStream");
         }
-        is.mark(1024);
-        AlacInputStream input_stream = new AlacInputStream(is);
+        if (is.markSupported()) {
+            int whole = is.available();
+            is.mark(whole);
+        }
 
-        context.input_stream = input_stream;
+        context.setInputStream(is);
 
         // if qtmovie_read returns successfully, the stream is up to
         // the movie data, which can be used directly by the decoder
-        QTMovieT qtmovie = new QTMovieT(input_stream);
+        QTMovieT qtmovie = new QTMovieT(context.input_stream);
         DemuxResT demux_res = new DemuxResT();
         int headerRead = qtmovie.read(demux_res);
 logger.fine("headerRead: " + headerRead);
@@ -54,9 +62,14 @@ logger.fine("headerRead: " + headerRead);
                 error_message = "Error while loading the QuickTime movie headers."
                         + " File type: " + QTMovieT.splitFourCC(demux_res.format);
             }
-logger.fine("reset");
 try {
-            is.reset(); // TODO not sure here is fine.
+            if (is.markSupported()) {
+                is.reset();
+logger.fine("reset: " + is.available());
+            } else if (is instanceof FileInputStream) {
+                ((FileInputStream) is).getChannel().position(0);
+logger.fine("seek: 0");
+            }
 } catch (IOException e) {
  logger.fine(e.getMessage());
 }
@@ -68,15 +81,14 @@ try {
             // close the file and
             // skip bytes to go directly to that point
 
-            if (!(is instanceof FileInputStream)) {
-                context.input_stream.reset();
-            } else {
-                context.input_stream.seek(0);
+            if (is.markSupported()) {
+                is.reset();
+logger.fine("reset: " + is.available());
+            } else if (is instanceof FileInputStream) {
+                ((FileInputStream) is).getChannel().position(0);
+logger.fine("seek: 0");
             }
 
-            context.input_stream = input_stream;
-
-            qtmovie.qtstream.stream = input_stream;
             qtmovie.qtstream.currentPos = 0;
             qtmovie.qtstream.skip(qtmovie.saved_mdat_pos);
         }
@@ -91,7 +103,7 @@ try {
         context.file = file;
     }
 
-    /** */
+    @Override
     public void close() throws IOException {
         context.close();
     }

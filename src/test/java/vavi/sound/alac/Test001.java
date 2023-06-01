@@ -6,6 +6,7 @@
 
 package vavi.sound.alac;
 
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -50,7 +51,7 @@ class Test001 {
     static long time;
 
     static {
-        time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 10 * 1000;
+        time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 9 * 1000;
     }
 
     byte[] format_samples(int bps, int[] src, int samcnt) {
@@ -123,7 +124,7 @@ Debug.println(audioFormat);
         DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
         SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
         line.open(audioFormat);
-        line.addLineListener(ev -> System.err.println(ev.getType()));
+        line.addLineListener(ev -> Debug.println(ev.getType()));
         line.start();
 
         volume(line, .1d);
@@ -149,12 +150,15 @@ Debug.println(audioFormat);
         ac.close();
     }
 
+    // @see BufferedInputStream
+    static final int BUF_MAX = Integer.MAX_VALUE - 8;
+
     @Test
     @DisplayName("proto 2")
     void test2() throws Exception {
         InputStream is = Files.newInputStream(Paths.get(alac));
 
-        Alac decoder = new Alac(is);
+        Alac decoder = new Alac(new BufferedInputStream(is, BUF_MAX));
         int num_channels = decoder.getNumChannels();
         int total_samples = decoder.getNumSamples();
         int byteps = decoder.getBytesPerSample();
@@ -179,7 +183,7 @@ Debug.println(audioFormat);
         DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
         SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
         line.open(audioFormat);
-        line.addLineListener(ev -> System.err.println(ev.getType()));
+        line.addLineListener(ev -> Debug.println(ev.getType()));
         line.start();
 
         volume(line, .1d);

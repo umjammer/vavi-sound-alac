@@ -9,15 +9,56 @@
 package com.beatofthedrum.alacdecoder;
 
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.FileChannel;
+import java.util.logging.Logger;
 
 
 /**
  * AlacContext.
  */
 public class AlacContext {
+
+    private static final Logger logger = Logger.getLogger(AlacContext.class.getName());
+
+    /**
+     * @author Denis Tulskiy
+     * @since 4/7/11
+     */
+    static class AlacInputStream extends DataInputStream {
+
+        int total;
+
+        /**
+         * Creates a DataInputStream that uses the specified
+         * underlying InputStream.
+         *
+         * @param in the specified input stream
+         */
+        public AlacInputStream(InputStream in) throws IOException {
+            super(in);
+            total = in.available();
+logger.fine("total: " + total);
+        }
+
+        public void seek(long pos) throws IOException {
+            if (in instanceof FileInputStream) {
+                FileChannel fc = ((FileInputStream) in).getChannel();
+                fc.position(pos);
+logger.fine("position: " + fc.position());
+            } else if (in.markSupported()) {
+                in.reset();
+                in.mark(total);
+logger.fine("reset: " + in.available());
+                if (pos != 0)
+                    skipBytes((int) pos);
+            }
+        }
+    }
 
     DemuxResT demux_res;
     AlacFile file;
@@ -32,18 +73,15 @@ public class AlacContext {
         int headerRead;
         DemuxResT demux_res = new DemuxResT();
         AlacContext context = new AlacContext();
-        AlacInputStream input_stream;
         AlacFile file;
 
-        FileInputStream fistream;
-        fistream = new FileInputStream(inputfile);
-        input_stream = new AlacInputStream(fistream);
+        FileInputStream fistream = new FileInputStream(inputfile);
 
-        context.input_stream = input_stream;
+        context.setInputStream(fistream);
 
         // if qtmovie_read returns successfully, the stream is up to
         // the movie data, which can be used directly by the decoder
-        QTMovieT qtmovie = new QTMovieT(input_stream);
+        QTMovieT qtmovie = new QTMovieT(context.input_stream);
         headerRead = qtmovie.read(demux_res);
 
         if (headerRead == 0) {
@@ -63,10 +101,9 @@ public class AlacContext {
             context.input_stream.close();
 
             fistream = new FileInputStream(inputfile);
-            input_stream = new AlacInputStream(fistream);
-            context.input_stream = input_stream;
+            context.setInputStream(fistream);
 
-            qtmovie.qtstream.stream = input_stream;
+            qtmovie.qtstream.stream = context.input_stream;
             qtmovie.qtstream.currentPos = 0;
             qtmovie.qtstream.skip(qtmovie.saved_mdat_pos);
         }
@@ -81,6 +118,11 @@ public class AlacContext {
         context.file = file;
 
         return context;
+    }
+
+    /** */
+    public void setInputStream(InputStream is) throws IOException {
+        input_stream = new AlacInputStream(is);
     }
 
     /**

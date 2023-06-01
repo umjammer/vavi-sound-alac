@@ -7,6 +7,7 @@
 package vavi.sound.samppled.alac;
 
 import java.io.BufferedInputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,6 +20,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.sound.sampled.spi.AudioFileReader;
 import javax.sound.sampled.spi.FormatConversionProvider;
 
@@ -30,9 +32,13 @@ import org.junit.jupiter.api.Test;
 import vavi.sound.sampled.alac.AlacAudioFileReader;
 import vavi.sound.sampled.alac.AlacFormatConversionProvider;
 import vavi.util.Debug;
+import vavi.util.StringUtil;
 import vavi.util.properties.annotation.Property;
 import vavi.util.properties.annotation.PropsEntity;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static vavi.sound.SoundUtil.volume;
 import static vavix.util.DelayedWorker.later;
@@ -63,7 +69,7 @@ class AlacFormatConversionProviderTest {
     static {
         System.setProperty("vavi.util.logging.VaviFormatter.extraClassMethod", "org\\.tritonus\\.share\\.TDebug#out");
 
-        time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 10 * 1000;
+        time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 9 * 1000;
     }
 
     @Property
@@ -92,12 +98,15 @@ System.err.println(spi);
         assertTrue(result2.get());
     }
 
+    // @see BufferedInputStream
+    static final int BUF_MAX = Integer.MAX_VALUE - 8;
+
     @Test
     @DisplayName("directly")
     void test0() throws Exception {
 
         Path path = Paths.get(alac);
-        AudioInputStream sourceAis = new AlacAudioFileReader().getAudioInputStream(new BufferedInputStream(Files.newInputStream(path)));
+        AudioInputStream sourceAis = new AlacAudioFileReader().getAudioInputStream(new BufferedInputStream(Files.newInputStream(path), BUF_MAX));
 
         AudioFormat inAudioFormat = sourceAis.getFormat();
 Debug.println("IN: " + inAudioFormat);
@@ -118,7 +127,7 @@ Debug.println("OUT: " + outAudioFormat);
         line.addLineListener(ev -> Debug.println(ev.getType()));
         line.start();
 
-        volume(line, .2d);
+        volume(line, .1d);
 
         byte[] buf = new byte[1024];
         while (!later(time).come()) {
@@ -138,7 +147,7 @@ Debug.println("OUT: " + outAudioFormat);
     void test1() throws Exception {
 
         Path path = Paths.get(alac);
-        AudioInputStream sourceAis = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(path)));
+        AudioInputStream sourceAis = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(path), BUF_MAX));
 
         AudioFormat inAudioFormat = sourceAis.getFormat();
 Debug.println("IN: " + inAudioFormat);
@@ -159,7 +168,7 @@ Debug.println("OUT: " + outAudioFormat);
         line.addLineListener(ev -> Debug.println(ev.getType()));
         line.start();
 
-        volume(line, .2d);
+        volume(line, .1d);
 
         byte[] buf = new byte[1024];
         while (!later(time).come()) {
@@ -172,6 +181,29 @@ Debug.println("OUT: " + outAudioFormat);
         line.drain();
         line.stop();
         line.close();
+    }
+
+    @Test
+    void test4() throws Exception {
+        Path path = Paths.get(alac);
+        AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(path), BUF_MAX));
+        assertNotNull(ais.getFormat().properties().get("alac"));
+        ais = AudioSystem.getAudioInputStream(path.toFile());
+        assertNotNull(ais.getFormat().properties().get("alac"));
+        ais = AudioSystem.getAudioInputStream(path.toUri().toURL());
+        assertNotNull(ais.getFormat().properties().get("alac"));
+    }
+
+    @Test
+    void test5() throws Exception {
+        InputStream is = AlacFormatConversionProviderTest.class.getResourceAsStream("/test.caf");
+        int available = is.available();
+        assertThrows(UnsupportedAudioFileException.class, () -> {
+Debug.println(StringUtil.paramString(is));
+            AudioInputStream ais = AudioSystem.getAudioInputStream(is);
+Debug.println(ais.getFormat());
+        });
+        assertEquals(available, is.available()); // spi must not consume input stream even one byte
     }
 
     @Test
