@@ -50,11 +50,13 @@ class Test001 {
 
     static long time;
 
+    static final double volume = Double.parseDouble(System.getProperty("vavi.test.volume",  "0.2"));
+
     static {
         time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 9 * 1000;
     }
 
-    byte[] format_samples(int bps, int[] src, int samcnt) {
+    byte[] formatSamples(int bps, int[] src, int samcnt) {
         int temp = 0;
         int counter = 0;
         int counter2 = 0;
@@ -127,21 +129,21 @@ Debug.println(audioFormat);
         line.addLineListener(ev -> Debug.println(ev.getType()));
         line.start();
 
-        volume(line, .1d);
+        volume(line, volume);
 
         byte[] pcmBuffer = null;
-        int[] pDestBuffer = new int[1024 * 24 * 3]; // 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps)
+        int[] destBuffer = new int[1024 * 24 * 3]; // 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps)
         int bps = ac.getBytesPerSample();
         while (!later(time).come()) {
-            int bytes_unpacked = ac.unpackSamples(pDestBuffer);
-            if (bytes_unpacked == -1) {
+            int bytesUnpacked = ac.unpackSamples(destBuffer);
+            if (bytesUnpacked == -1) {
                 break;
             }
-            if (bytes_unpacked > 0) {
-                pcmBuffer = format_samples(bps, pDestBuffer, bytes_unpacked);
+            if (bytesUnpacked > 0) {
+                pcmBuffer = formatSamples(bps, destBuffer, bytesUnpacked);
             }
 
-            line.write(pcmBuffer, 0, bytes_unpacked);
+            line.write(pcmBuffer, 0, bytesUnpacked);
         }
         line.drain();
         line.stop();
@@ -159,24 +161,24 @@ Debug.println(audioFormat);
         InputStream is = Files.newInputStream(Paths.get(alac));
 
         Alac decoder = new Alac(new BufferedInputStream(is, BUF_MAX));
-        int num_channels = decoder.getChannels();
-        int total_samples = decoder.getNumSamples();
-        int byteps = decoder.getFrameSize();
-        int sample_rate = decoder.getSampleRate();
-        int bitps = decoder.getSampleSizeInBits();
-Debug.println("num_channels: " + num_channels +
-                   ", total_samples: " + total_samples +
-                   ", byteps: " + byteps +
-                   ", sample_rate: " + sample_rate +
-                   ", bitps: " + bitps);
+        int numChannels = decoder.getChannels();
+        int totalSamples = decoder.getNumSamples();
+        int bytePS = decoder.getFrameSize();
+        int sampleRate = decoder.getSampleRate();
+        int bitPS = decoder.getSampleSizeInBits();
+Debug.println("numChannels: " + numChannels +
+                   ", totalSamples: " + totalSamples +
+                   ", bytePS: " + bytePS +
+                   ", sampleRate: " + sampleRate +
+                   ", bitPS: " + bitPS);
 
         AudioFormat audioFormat = new AudioFormat(
             AudioFormat.Encoding.PCM_SIGNED,
-            sample_rate,
-            bitps,
-            num_channels,
-            byteps * num_channels,
-            sample_rate,
+            sampleRate,
+            bitPS,
+            numChannels,
+            bytePS * numChannels,
+            sampleRate,
             false);
 Debug.println(audioFormat);
 
@@ -186,7 +188,7 @@ Debug.println(audioFormat);
         line.addLineListener(ev -> Debug.println(ev.getType()));
         line.start();
 
-        volume(line, .1d);
+        volume(line, volume);
 
         byte[] pcmBuffer = new byte[0xffff];
         int[] pDestBuffer = new int[1024 * 24 * 3]; // 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps)

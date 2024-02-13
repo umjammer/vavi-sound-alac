@@ -46,18 +46,18 @@ public class Alac implements AutoCloseable {
 
         // if qtmovie_read returns successfully, the stream is up to
         // the movie data, which can be used directly by the decoder
-        QTMovieT qtmovie = new QTMovieT(context.input_stream);
-        DemuxResT demux_res = new DemuxResT();
-        int headerRead = qtmovie.read(demux_res);
+        QTMovieT qtMovie = new QTMovieT(context.inputStream);
+        DemuxResT demuxRes = new DemuxResT();
+        int headerRead = qtMovie.read(demuxRes);
 logger.fine("headerRead: " + headerRead);
 
         if (headerRead == 0) {
-            String error_message;
-            if (demux_res.format_read == 0) {
-                error_message = "Failed to load the QuickTime movie headers.";
+            String errorMessage;
+            if (demuxRes.formatRead == 0) {
+                errorMessage = "Failed to load the QuickTime movie headers.";
             } else {
-                error_message = "Error while loading the QuickTime movie headers."
-                        + " File type: " + QTMovieT.splitFourCC(demux_res.format);
+                errorMessage = "Error while loading the QuickTime movie headers."
+                        + " File type: " + QTMovieT.splitFourCC(demuxRes.format);
             }
 try {
             if (is.markSupported()) {
@@ -70,7 +70,7 @@ logger.fine("seek: 0");
 } catch (IOException e) {
  logger.fine(e.getMessage());
 }
-            throw new IOException(error_message);
+            throw new IOException(errorMessage);
         } else if (headerRead == 3) {
             // This section is used when the stream system being used doesn't
             // support seeking
@@ -86,17 +86,17 @@ logger.fine("reset: " + is.available());
 logger.fine("seek: 0");
             }
 
-            qtmovie.qtstream.currentPos = 0;
-            qtmovie.qtstream.skip(qtmovie.saved_mdat_pos);
+            qtMovie.qtStream.currentPos = 0;
+            qtMovie.qtStream.skip(qtMovie.savedMDatPos);
         }
 
         // initialise the sound converter
 
-        AlacFile file = AlacFile.create(demux_res.sample_size, demux_res.num_channels);
+        AlacFile file = AlacFile.create(demuxRes.sampleSize, demuxRes.numChannels);
 
-        file.alac_set_info(demux_res.codecdata);
+        file.setAlacInfo(demuxRes.codecData);
 
-        context.demux_res = demux_res;
+        context.demuxRes = demuxRes;
         context.file = file;
     }
 
@@ -109,12 +109,12 @@ logger.fine("seek: 0");
      * Here's where we extract the actual music data
      * @return -1 finished
      */
-    public int decode(int[] pDestBuffer, byte[] pcmBuffer) throws IOException {
-        int bytes_unpacked = context.unpackSamples(pDestBuffer);
-        if (bytes_unpacked > 0) {
-            formatSamples(pcmBuffer, getFrameSize(), pDestBuffer, bytes_unpacked);
+    public int decode(int[] destBuffer, byte[] pcmBuffer) throws IOException {
+        int bytesUnpacked = context.unpackSamples(destBuffer);
+        if (bytesUnpacked > 0) {
+            formatSamples(pcmBuffer, getFrameSize(), destBuffer, bytesUnpacked);
         }
-        return bytes_unpacked;
+        return bytesUnpacked;
     }
 
     /**
@@ -151,60 +151,60 @@ logger.fine("seek: 0");
     }
 
     /** from DecoderDemo */
-    private static void formatSamples(byte[] dst, int bps, int[] src, int samcnt) {
+    private static void formatSamples(byte[] dst, int bps, int[] src, int samCount) {
         int counter = 0;
         int counter2 = 0;
 
         switch (bps) {
         case 1:
-            while (samcnt > 0) {
+            while (samCount > 0) {
                 dst[counter] = (byte) (0x00FF & (src[counter] + 128));
                 counter++;
-                samcnt--;
+                samCount--;
             }
             break;
         case 2:
-            while (samcnt > 0) {
+            while (samCount > 0) {
                 int temp = src[counter2];
                 dst[counter] = (byte) temp;
                 counter++;
                 dst[counter] = (byte) (temp >>> 8);
                 counter++;
                 counter2++;
-                samcnt = samcnt - 2;
+                samCount = samCount - 2;
             }
             break;
         case 3:
-            while (samcnt > 0) {
+            while (samCount > 0) {
                 dst[counter] = (byte) src[counter2];
                 counter++;
                 counter2++;
-                samcnt--;
+                samCount--;
             }
             break;
         }
     }
 
-    /** */
-    public static int decodeFrame(int[] fmtp, byte[] inbuffer, int[] outbuffer, int outputsize) {
+    /** used by airplay */
+    public static int decodeFrame(int[] fmtp, byte[] inBuffer, int[] outBuffer, int outputSize) {
 
         AlacFile alacFile = new AlacFile();
 
-        alacFile.numchannels = 2;
-        alacFile.bytespersample = (fmtp[3] / 8) * 2;
+        alacFile.numChannels = 2;
+        alacFile.bytesPerSample = (fmtp[3] / 8) * 2;
 
-        alacFile.setinfo_max_samples_per_frame = fmtp[1];
-        alacFile.setinfo_7a = fmtp[2];
-        alacFile.setinfo_sample_size = fmtp[3];
-        alacFile.setinfo_rice_historymult = fmtp[4];
-        alacFile.setinfo_rice_initialhistory = fmtp[5];
-        alacFile.setinfo_rice_kmodifier = fmtp[6];
-        alacFile.setinfo_7f = fmtp[7];
-        alacFile.setinfo_80 = fmtp[8];
-        alacFile.setinfo_82 = fmtp[9];
-        alacFile.setinfo_86 = fmtp[10];
-        alacFile.setinfo_8a_rate = fmtp[11];
+        alacFile.setInfo_maxSamplesPerFrame = fmtp[1];
+        alacFile.setInfo_7A = fmtp[2];
+        alacFile.setInfo_sampleSize = fmtp[3];
+        alacFile.setInfo_riceHistoryMult = fmtp[4];
+        alacFile.setInfo_riceInitialHistory = fmtp[5];
+        alacFile.setInfo_riceKModifier = fmtp[6];
+        alacFile.setInfo_7f = fmtp[7];
+        alacFile.setInfo_80 = fmtp[8];
+        alacFile.setInfo_82 = fmtp[9];
+        alacFile.setInfo_86 = fmtp[10];
+        alacFile.setInfo_8a_rate = fmtp[11];
 
-        return alacFile.decodeFrame(inbuffer, outbuffer, outputsize);
+        return alacFile.decodeFrame(inBuffer, outBuffer, outputSize);
     }
 }

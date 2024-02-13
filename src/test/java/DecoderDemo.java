@@ -18,17 +18,17 @@ import com.beatofthedrum.alacdecoder.WavWriter;
  */
 class DecoderDemo {
 
-    static java.io.FileOutputStream output_stream;
-    static int output_opened;
-    static int write_wav_format = 1;
-    static String input_file_n = "";
-    static String output_file_n = "";
+    static java.io.FileOutputStream outputStream;
+    static int outputOpened;
+    static int writeWavFormat = 1;
+    static String inputFileN = "";
+    static String outputFileN = "";
 
     /**
      * Reformat samples from longs in processor's native endian mode to
      * little-endian data with (possibly) less than 3 bytes / sample.
      */
-    public static byte[] format_samples(int bps, int[] src, int samcnt) {
+    public static byte[] formatSamples(int bps, int[] src, int samCount) {
         int temp = 0;
         int counter = 0;
         int counter2 = 0;
@@ -36,31 +36,31 @@ class DecoderDemo {
 
         switch (bps) {
         case 1:
-            while (samcnt > 0) {
+            while (samCount > 0) {
                 dst[counter] = (byte) (0x00FF & (src[counter] + 128));
                 counter++;
-                samcnt--;
+                samCount--;
             }
             break;
 
         case 2:
-            while (samcnt > 0) {
+            while (samCount > 0) {
                 temp = src[counter2];
                 dst[counter] = (byte) temp;
                 counter++;
                 dst[counter] = (byte) (temp >>> 8);
                 counter++;
                 counter2++;
-                samcnt = samcnt - 2;
+                samCount = samCount - 2;
             }
             break;
 
         case 3:
-            while (samcnt > 0) {
+            while (samCount > 0) {
                 dst[counter] = (byte) src[counter2];
                 counter++;
                 counter2++;
-                samcnt--;
+                samCount--;
             }
             break;
         }
@@ -68,7 +68,7 @@ class DecoderDemo {
         return dst;
     }
 
-    static void setup_environment(int argc, String[] argv) {
+    static void setupEnvironment(int argc, String[] argv) {
         int i = argc;
 
         int escaped = 0;
@@ -76,26 +76,26 @@ class DecoderDemo {
         if (argc < 2)
             usage();
 
-        int arg_idx = 0;
+        int argIndex = 0;
         // loop through command-line arguments
-        while (arg_idx < argc) {
-            if (argv[arg_idx].startsWith("-")) {
-                if (argv[arg_idx].startsWith("-r") || argv[arg_idx].startsWith("-R")) {
+        while (argIndex < argc) {
+            if (argv[argIndex].startsWith("-")) {
+                if (argv[argIndex].startsWith("-r") || argv[argIndex].startsWith("-R")) {
                     // raw PCM output
-                    write_wav_format = 0;
+                    writeWavFormat = 0;
                 }
-            } else if (input_file_n.length() == 0) {
-                input_file_n = argv[arg_idx];
-            } else if (output_file_n.length() == 0) {
-                output_file_n = argv[arg_idx];
+            } else if (inputFileN.isEmpty()) {
+                inputFileN = argv[argIndex];
+            } else if (outputFileN.isEmpty()) {
+                outputFileN = argv[argIndex];
             } else {
-                System.out.println("extra unknown argument: " + argv[arg_idx]);
+                System.out.println("extra unknown argument: " + argv[argIndex]);
                 usage();
             }
-            arg_idx++;
+            argIndex++;
         }
 
-        if (input_file_n.length() == 0 || output_file_n.length() == 0)
+        if (inputFileN.isEmpty() || outputFileN.isEmpty())
             usage();
 
     }
@@ -104,25 +104,25 @@ class DecoderDemo {
         int destBufferSize = 1024 * 24 * 3; // 24kb buffer = 4096 frames = 1
                                             // alac sample (we support max
                                             // 24bps)
-        byte[] pcmBuffer = new byte[65536];
-        int total_unpacked_bytes = 0;
-        int bytes_unpacked;
+        byte[] pcmBuffer;
+        int totalUnpackedBytes = 0;
+        int bytesUnpacked;
 
-        int[] pDestBuffer = new int[destBufferSize];
+        int[] destBuffer = new int[destBufferSize];
 
         int bps = ac.getBytesPerSample();
 
         while (true) {
-            bytes_unpacked = ac.unpackSamples(pDestBuffer);
-            if (bytes_unpacked == -1)
+            bytesUnpacked = ac.unpackSamples(destBuffer);
+            if (bytesUnpacked == -1)
                 break;
 
-            total_unpacked_bytes += bytes_unpacked;
+            totalUnpackedBytes += bytesUnpacked;
 
-            if (bytes_unpacked > 0) {
-                pcmBuffer = format_samples(bps, pDestBuffer, bytes_unpacked);
+            if (bytesUnpacked > 0) {
+                pcmBuffer = formatSamples(bps, destBuffer, bytesUnpacked);
                 try {
-                    output_stream.write(pcmBuffer, 0, bytes_unpacked);
+                    outputStream.write(pcmBuffer, 0, bytesUnpacked);
                 } catch (java.io.IOException ioe) {
                     System.err.println("Error writing data to output file. Error: " + ioe);
                 }
@@ -144,53 +144,53 @@ class DecoderDemo {
 
     public static void main(String[] args) throws IOException {
         AlacContext ac;
-        int output_size;
-        int total_samples;
-        int sample_rate;
-        int num_channels;
-        int byteps;
-        int bitps;
+        int outputSize;
+        int totalSamples;
+        int sampleRate;
+        int numChannels;
+        int bytePS;
+        int bitPS;
 
-        output_opened = 0;
+        outputOpened = 0;
 
-        setup_environment(args.length, args); // checks all the parameters
+        setupEnvironment(args.length, args); // checks all the parameters
                                               // passed on command line
 
         try {
-            output_stream = new java.io.FileOutputStream(output_file_n);
-            output_opened = 1;
+            outputStream = new java.io.FileOutputStream(outputFileN);
+            outputOpened = 1;
         } catch (java.io.IOException ioe) {
-            System.out.println("Cannot open output file: " + output_file_n + " : Error : " + ioe);
-            output_opened = 0;
+            System.out.println("Cannot open output file: " + outputFileN + " : Error : " + ioe);
+            outputOpened = 0;
             System.exit(1);
         }
 
-        ac = AlacContext.openFileInput(Paths.get(input_file_n).toFile());
+        ac = AlacContext.openFileInput(Paths.get(inputFileN).toFile());
 
-        num_channels = ac.getNumChannels();
+        numChannels = ac.getNumChannels();
 
-        System.out.println("The Apple Lossless file has " + num_channels + " channels");
+        System.out.println("The Apple Lossless file has " + numChannels + " channels");
 
-        total_samples = ac.getNumSamples();
+        totalSamples = ac.getNumSamples();
 
-        System.out.println("The Apple Lossless file has " + total_samples + " samples");
+        System.out.println("The Apple Lossless file has " + totalSamples + " samples");
 
-        byteps = ac.getBytesPerSample();
+        bytePS = ac.getBytesPerSample();
 
-        System.out.println("The Apple Lossless file has " + byteps + " bytes per sample");
+        System.out.println("The Apple Lossless file has " + bytePS + " bytes per sample");
 
-        sample_rate = ac.getSampleRate();
+        sampleRate = ac.getSampleRate();
 
-        bitps = ac.getBitsPerSample();
+        bitPS = ac.getBitsPerSample();
 
         // write wav output headers
-        if (write_wav_format != 0) {
-            WavWriter.wavwriter_writeheaders(output_stream,
-                                             (total_samples * byteps * num_channels),
-                                             num_channels,
-                                             sample_rate,
-                                             byteps,
-                                             bitps);
+        if (writeWavFormat != 0) {
+            WavWriter.writeHeaders(outputStream,
+                    (totalSamples * bytePS * numChannels),
+                    numChannels,
+                    sampleRate,
+                    bytePS,
+                    bitPS);
         }
 
         // will convert the entire buffer
@@ -198,8 +198,8 @@ class DecoderDemo {
 
         ac.close();
 
-        if (output_opened != 0) {
-            output_stream.close();
+        if (outputOpened != 0) {
+            outputStream.close();
         }
     }
 }
