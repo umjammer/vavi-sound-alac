@@ -60,61 +60,61 @@ logger.fine("reset: " + in.available());
         }
     }
 
-    DemuxResT demux_res;
+    DemuxResT demuxRes;
     AlacFile file;
-    AlacInputStream input_stream;
-    private int current_sample_block = 0;
+    AlacInputStream inputStream;
+    private int currentSampleBlock = 0;
     private int offset;
     /** sample big enough to hold any input for a single file frame */
-    private byte[] read_buffer = new byte[1024 * 80];
+    private final byte[] readBuffer = new byte[1024 * 80];
 
     /** old original factory */
-    public static AlacContext openFileInput(File inputfile) throws IOException {
+    public static AlacContext openFileInput(File inputFile) throws IOException {
         int headerRead;
-        DemuxResT demux_res = new DemuxResT();
+        DemuxResT demuxRes = new DemuxResT();
         AlacContext context = new AlacContext();
         AlacFile file;
 
-        FileInputStream fistream = new FileInputStream(inputfile);
+        FileInputStream fistream = new FileInputStream(inputFile);
 
         context.setInputStream(fistream);
 
-        // if qtmovie_read returns successfully, the stream is up to
+        // if QtMovieT#read returns successfully, the stream is up to
         // the movie data, which can be used directly by the decoder
-        QTMovieT qtmovie = new QTMovieT(context.input_stream);
-        headerRead = qtmovie.read(demux_res);
+        QTMovieT qtMovie = new QTMovieT(context.inputStream);
+        headerRead = qtMovie.read(demuxRes);
 
         if (headerRead == 0) {
-            String error_message;
-            if (demux_res.format_read == 0) {
-                error_message = "Failed to load the QuickTime movie headers.";
+            String errorMessage;
+            if (demuxRes.formatRead == 0) {
+                errorMessage = "Failed to load the QuickTime movie headers.";
             } else {
-                error_message = "Error while loading the QuickTime movie headers."
-                        + " File type: " + QTMovieT.splitFourCC(demux_res.format);
+                errorMessage = "Error while loading the QuickTime movie headers."
+                        + " File type: " + QTMovieT.splitFourCC(demuxRes.format);
             }
-            throw new IOException(error_message);
+            throw new IOException(errorMessage);
         } else if (headerRead == 3) {
             // This section is used when the stream system being used doesn't support seeking
             // We have kept track within the file where we need to go to, we close the file and
             // skip bytes to go directly to that point
 
-            context.input_stream.close();
+            context.inputStream.close();
 
-            fistream = new FileInputStream(inputfile);
+            fistream = new FileInputStream(inputFile);
             context.setInputStream(fistream);
 
-            qtmovie.qtstream.stream = context.input_stream;
-            qtmovie.qtstream.currentPos = 0;
-            qtmovie.qtstream.skip(qtmovie.saved_mdat_pos);
+            qtMovie.qtStream.stream = context.inputStream;
+            qtMovie.qtStream.currentPos = 0;
+            qtMovie.qtStream.skip(qtMovie.savedMDatPos);
         }
 
         // initialise the sound converter
 
-        file = AlacFile.create(demux_res.sample_size, demux_res.num_channels);
+        file = AlacFile.create(demuxRes.sampleSize, demuxRes.numChannels);
 
-        file.alac_set_info(demux_res.codecdata);
+        file.setAlacInfo(demuxRes.codecData);
 
-        context.demux_res = demux_res;
+        context.demuxRes = demuxRes;
         context.file = file;
 
         return context;
@@ -122,46 +122,46 @@ logger.fine("reset: " + in.available());
 
     /** */
     public void setInputStream(InputStream is) throws IOException {
-        input_stream = new AlacInputStream(is);
+        inputStream = new AlacInputStream(is);
     }
 
     /**
      * sets position in pcm samples
      *
      * @param position position in pcm samples to go to
-     * @throws IllegalArgumentException at get_sample_info
+     * @throws IllegalArgumentException at getSampleInfo
      */
     public void setPosition(long position) throws IOException {
-        DemuxResT res = this.demux_res;
+        DemuxResT res = this.demuxRes;
 
-        int current_position = 0;
-        int current_sample = 0;
-        DemuxResT.SampleDuration sample_info = new DemuxResT.SampleDuration();
+        int currentPosition = 0;
+        int currentSample = 0;
+        DemuxResT.SampleDuration sampleInfo = new DemuxResT.SampleDuration();
         for (int i = 0; i < res.stsc.length; i++) {
             DemuxResT.ChunkInfo chunkInfo = res.stsc[i];
-            int last_chunk;
+            int lastChunk;
 
             if (i < res.stsc.length - 1) {
-                last_chunk = res.stsc[i + 1].first_chunk;
+                lastChunk = res.stsc[i + 1].firstChunk;
             } else {
-                last_chunk = res.stco.length;
+                lastChunk = res.stco.length;
             }
 
-            for (int chunk = chunkInfo.first_chunk; chunk <= last_chunk; chunk++) {
+            for (int chunk = chunkInfo.firstChunk; chunk <= lastChunk; chunk++) {
                 int pos = res.stco[chunk - 1];
-                int sample_count = chunkInfo.samples_per_chunk;
-                while (sample_count > 0) {
-                    res.get_sample_info(current_sample, sample_info);
-                    current_position += sample_info.sample_duration;
-                    if (position < current_position) {
-                        this.input_stream.seek(pos);
-                        this.current_sample_block = current_sample;
-                        this.offset = (int) (position - (current_position - sample_info.sample_duration)) * getNumChannels();
+                int sampleCount = chunkInfo.samplesPerChunk;
+                while (sampleCount > 0) {
+                    res.getSampleInfo(currentSample, sampleInfo);
+                    currentPosition += sampleInfo.sampleDuration;
+                    if (position < currentPosition) {
+                        this.inputStream.seek(pos);
+                        this.currentSampleBlock = currentSample;
+                        this.offset = (int) (position - (currentPosition - sampleInfo.sampleDuration)) * getNumChannels();
                         return;
                     }
-                    pos += sample_info.sample_byte_size;
-                    current_sample++;
-                    sample_count--;
+                    pos += sampleInfo.sampleByteSize;
+                    currentSample++;
+                    sampleCount--;
                 }
             }
         }
@@ -170,46 +170,46 @@ logger.fine("reset: " + in.available());
     /** Get total number of samples contained in the Apple Lossless file, or -1 if unknown */
     public int getNumSamples() throws IOException {
         // calculate output size
-        int num_samples = 0;
+        int numSamples = 0;
         @SuppressWarnings("unused")
-        boolean error_found = false;
+        boolean errorFound = false;
         @SuppressWarnings("unused")
-        int retval = 0;
+        int retVal = 0;
 
-        for (int i = 0; i < this.demux_res.sample_byte_size.length; i++) {
-            int thissample_duration = 0;
-            int thissample_bytesize = 0;
+        for (int i = 0; i < this.demuxRes.sampleByteSize.length; i++) {
+            int thisSampleDuration = 0;
+            int thisSampleByteSize = 0;
 
-            DemuxResT.SampleDuration sampleinfo = new DemuxResT.SampleDuration();
-            this.demux_res.get_sample_info(i, sampleinfo);
-            thissample_duration = sampleinfo.sample_duration;
-            thissample_bytesize = sampleinfo.sample_byte_size;
+            DemuxResT.SampleDuration sampleInfo = new DemuxResT.SampleDuration();
+            this.demuxRes.getSampleInfo(i, sampleInfo);
+            thisSampleDuration = sampleInfo.sampleDuration;
+            thisSampleByteSize = sampleInfo.sampleByteSize;
 
-            num_samples += thissample_duration;
+            numSamples += thisSampleDuration;
         }
 
-        return num_samples;
+        return numSamples;
     }
 
     public int getBytesPerSample() {
-        if (this.demux_res.sample_size != 0) {
-            return (int) Math.ceil(this.demux_res.sample_size / 8d);
+        if (this.demuxRes.sampleSize != 0) {
+            return (int) Math.ceil(this.demuxRes.sampleSize / 8d);
         } else {
             return 2;
         }
     }
 
     public int getBitsPerSample() {
-        if (this.demux_res.sample_size != 0) {
-            return this.demux_res.sample_size;
+        if (this.demuxRes.sampleSize != 0) {
+            return this.demuxRes.sampleSize;
         } else {
             return 16;
         }
     }
 
     public int getNumChannels() {
-        if (this.demux_res.num_channels != 0) {
-            return this.demux_res.num_channels;
+        if (this.demuxRes.numChannels != 0) {
+            return this.demuxRes.numChannels;
         } else {
             return 2;
         }
@@ -217,8 +217,8 @@ logger.fine("reset: " + in.available());
 
     /** Returns the sample rate of the specified ALAC file */
     public int getSampleRate() {
-        if (this.demux_res.sample_rate != 0) {
-            return this.demux_res.sample_rate;
+        if (this.demuxRes.sampleRate != 0) {
+            return this.demuxRes.sampleRate;
         } else {
             return 44100;
         }
@@ -228,40 +228,40 @@ logger.fine("reset: " + in.available());
      * Here's where we extract the actual music data
      * @return -1 finished
      */
-    public int unpackSamples(int[] pDestBuffer) throws IOException {
-        DemuxResT.SampleDuration sampleinfo = new DemuxResT.SampleDuration();
-        byte[] read_buffer = this.read_buffer;
+    public int unpackSamples(int[] destBuffer) throws IOException {
+        DemuxResT.SampleDuration sampleInfo = new DemuxResT.SampleDuration();
+        byte[] readBuffer = this.readBuffer;
 //        int destBufferSize = 1024 * 24 * 3; // 24kb buffer = 4096 frames = 1 file sample (we support max 24bps)
-        int destBufferSize = pDestBuffer.length;
-        MyStream inputStream = new MyStream(this.input_stream);
+        int destBufferSize = destBuffer.length;
+        MyStream inputStream = new MyStream(this.inputStream);
 
-        // if current_sample_block is beyond last block then finished
-        if (this.current_sample_block >= this.demux_res.sample_byte_size.length) {
+        // if currentSampleBlock is beyond last block then finished
+        if (this.currentSampleBlock >= this.demuxRes.sampleByteSize.length) {
             return -1;
         }
 
-        this.demux_res.get_sample_info(this.current_sample_block, sampleinfo);
+        this.demuxRes.getSampleInfo(this.currentSampleBlock, sampleInfo);
 
-        int sample_byte_size = sampleinfo.sample_byte_size;
+        int sampleByteSize = sampleInfo.sampleByteSize;
 
-        inputStream.read(sample_byte_size, read_buffer, 0);
+        inputStream.read(sampleByteSize, readBuffer, 0);
 
         // now fetch
         int outputBytes = destBufferSize;
 
-        outputBytes = this.file.decodeFrame(read_buffer, pDestBuffer, outputBytes);
+        outputBytes = this.file.decodeFrame(readBuffer, destBuffer, outputBytes);
 
-        this.current_sample_block = this.current_sample_block + 1;
+        this.currentSampleBlock = this.currentSampleBlock + 1;
         outputBytes -= this.offset * this.getBytesPerSample();
-        System.arraycopy(pDestBuffer, this.offset, pDestBuffer, 0, outputBytes);
+        System.arraycopy(destBuffer, this.offset, destBuffer, 0, outputBytes);
         this.offset = 0;
         return outputBytes;
     }
 
     /** */
     public void close() throws IOException {
-        if (null != this.input_stream) {
-            this.input_stream.close();
+        if (null != this.inputStream) {
+            this.inputStream.close();
         }
     }
 }

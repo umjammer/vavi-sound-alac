@@ -48,6 +48,7 @@ class Alac2PcmAudioInputStream extends AudioInputStream {
         }
 
         /** */
+        @Override
         public void initialize(OutputStream out) throws IOException {
             if (this.out != null) {
                 throw new IOException("Already initialized");
@@ -63,6 +64,7 @@ class Alac2PcmAudioInputStream extends AudioInputStream {
         private int[] pDestBuffer = new int[1024 * 24 * 3];
 
         /** */
+        @Override
         public void execute() throws IOException {
             if (out == null) {
                 throw new IOException("Not yet initialized");
@@ -77,6 +79,7 @@ class Alac2PcmAudioInputStream extends AudioInputStream {
         }
 
         /** */
+        @Override
         public void finish() throws IOException {
             alac.close();
         }

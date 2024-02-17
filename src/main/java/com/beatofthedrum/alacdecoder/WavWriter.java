@@ -8,6 +8,7 @@
 
 package com.beatofthedrum.alacdecoder;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -19,7 +20,7 @@ public class WavWriter {
 
 	private static final Logger logger = Logger.getLogger(WavWriter.class.getName());
 
-    static void write_uint32(java.io.FileOutputStream f, int v) {
+    static void writeUInt32(FileOutputStream f, int v) {
         byte[] outputBytes = new byte[4];
 
         outputBytes[3] = (byte) (v >>> 24);
@@ -33,7 +34,7 @@ public class WavWriter {
 		}
     }
 
-    static void write_uint16(java.io.FileOutputStream f, int v) {
+    static void writeUInt16(FileOutputStream f, int v) {
         byte[] outputBytes = new byte[2];
 
         outputBytes[1] = (byte) (v >>> 8);
@@ -45,7 +46,7 @@ public class WavWriter {
         }
     }
 
-    public static void wavwriter_writeheaders(java.io.FileOutputStream f, int datasize, int numchannels, int samplerate, int bytespersample, int bitspersample) {
+    public static void writeHeaders(FileOutputStream f, int dataSize, int numChannels, int sampleRate, int bytesPerSample, int bitsPerSample) {
         byte[] buffAsBytes = new byte[4];
 
         // write RIFF header
@@ -60,7 +61,7 @@ public class WavWriter {
 			logger.fine(ioe.toString());
         }
 
-        write_uint32(f, (36 + datasize));
+        writeUInt32(f, (36 + dataSize));
         buffAsBytes[0] = 87;
         buffAsBytes[1] = 65;
         buffAsBytes[2] = 86;
@@ -84,13 +85,13 @@ public class WavWriter {
 			logger.fine(ioe.toString());
         }
 
-        write_uint32(f, 16);
-        write_uint16(f, 1); // PCM data
-        write_uint16(f, numchannels);
-        write_uint32(f, samplerate);
-        write_uint32(f, (samplerate * numchannels * bytespersample)); // byterate
-        write_uint16(f, (numchannels * bytespersample));
-        write_uint16(f, bitspersample);
+        writeUInt32(f, 16);
+        writeUInt16(f, 1); // PCM data
+        writeUInt16(f, numChannels);
+        writeUInt32(f, sampleRate);
+        writeUInt32(f, (sampleRate * numChannels * bytesPerSample)); // byterate
+        writeUInt16(f, (numChannels * bytesPerSample));
+        writeUInt16(f, bitsPerSample);
 
         /* write data header */
         buffAsBytes[0] = 100;
@@ -104,7 +105,7 @@ public class WavWriter {
 			logger.fine(ioe.toString());
         }
 
-        write_uint32(f, datasize);
+        writeUInt32(f, dataSize);
     }
 }
 

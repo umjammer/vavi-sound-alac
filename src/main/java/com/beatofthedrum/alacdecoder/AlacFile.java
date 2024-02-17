@@ -20,285 +20,288 @@ class AlacFile {
     private static final Logger logger = Logger.getLogger(AlacFile.class.getName());
 
     static int RICE_THRESHOLD = 8;
-    byte[] input_buffer;
-    int ibIdx = 0;
+    byte[] inputBuffer;
+    int ibIndex = 0;
     /** used so we can do arbitrary bit reads */
-    int input_buffer_bitaccumulator = 0;
+    int inputBufferBitAccumulator = 0;
 
-    int samplesize = 0;
-    int numchannels = 0;
-    int bytespersample = 0;
+    int sampleSize = 0;
+    int numChannels = 0;
+    int bytesPerSample = 0;
 
     LeadingZeros lz = new LeadingZeros();
 
-    private static final int buffer_size = 16384;
+    private static final int bufferSize = 16384;
 
     // buffers
-    int[] predicterror_buffer_a = new int[buffer_size];
-    int[] predicterror_buffer_b = new int[buffer_size];
+    int[] predicterrorBufferA = new int[bufferSize];
+    int[] predicterrorBufferB = new int[bufferSize];
 
-    int[] outputsamples_buffer_a = new int[buffer_size];
-    int[] outputsamples_buffer_b = new int[buffer_size];
+    int[] outputSamplesBufferA = new int[bufferSize];
+    int[] outputsamplesBufferB = new int[bufferSize];
 
-    int[] uncompressed_bytes_buffer_a = new int[buffer_size];
-    int[] uncompressed_bytes_buffer_b = new int[buffer_size];
+    int[] uncompressedBytesBufferA = new int[bufferSize];
+    int[] uncompressedBytesBufferB = new int[bufferSize];
 
     // stuff from setinfo
 
     /** max samples per frame? */
-    int setinfo_max_samples_per_frame = 0; // 0x1000 = 4096
-    int setinfo_7a = 0; // 0x00
-    int setinfo_sample_size = 0; // 0x10
-    int setinfo_rice_historymult = 0; // 0x28
-    int setinfo_rice_initialhistory = 0; // 0x0a
-    int setinfo_rice_kmodifier = 0; // 0x0e
-    int setinfo_7f = 0; // 0x02
-    int setinfo_80 = 0; // 0x00ff
+    int setInfo_maxSamplesPerFrame = 0; // 0x1000 = 4096
+    int setInfo_7A = 0; // 0x00
+    int setInfo_sampleSize = 0; // 0x10
+    int setInfo_riceHistoryMult = 0; // 0x28
+    int setInfo_riceInitialHistory = 0; // 0x0a
+    int setInfo_riceKModifier = 0; // 0x0e
+    int setInfo_7f = 0; // 0x02
+    int setInfo_80 = 0; // 0x00ff
     /** max sample size?? */
-    int setinfo_82 = 0; // 0x000020e7
+    int setInfo_82 = 0; // 0x000020e7
     /** bit rate (avarge)?? */
-    int setinfo_86 = 0; // 0x00069fe4
+    int setInfo_86 = 0; // 0x00069fe4
     /** end setinfo stuff */
-    int setinfo_8a_rate = 0; // 0x0000ac44
+    int setInfo_8a_rate = 0; // 0x0000ac44
 
-    public int[] predictor_coef_table = new int[1024];
-    public int[] predictor_coef_table_a = new int[1024];
-    public int[] predictor_coef_table_b = new int[1024];
+    public int[] predictorCoefTable = new int[1024];
+    public int[] predictorCoefTableA = new int[1024];
+    public int[] predictorCoefTableB = new int[1024];
 
     // stream reading
 
-    private static int[] predictor_decompress_fir_adapt(int[] error_buffer, int output_size, int readsamplesize, int[] predictor_coef_table, int predictor_coef_num, int predictor_quantitization) {
-        int buffer_out_idx = 0;
-        int[] buffer_out;
-        int bitsmove = 0;
+    private static int[] predictorDecompressFirAdapt(int[] errorBuffer, int outputSize, int readSampleSize, int[] predictorCoefTable, int predictorCoefNum, int predictorQuantitization) {
+        int bufferOutIndex = 0;
+        int[] bufferOut;
+        int bitsMove = 0;
 
         // first sample always copies
-        buffer_out = error_buffer;
+        bufferOut = errorBuffer;
 
-        if (predictor_coef_num == 0) {
-            if (output_size <= 1)
-                return (buffer_out);
+        if (predictorCoefNum == 0) {
+            if (outputSize <= 1)
+                return (bufferOut);
             int sizeToCopy = 0;
-            sizeToCopy = (output_size - 1) * 4;
-            System.arraycopy(error_buffer, 1, buffer_out, 1, sizeToCopy);
-            return (buffer_out);
+            sizeToCopy = (outputSize - 1) * 4;
+            System.arraycopy(errorBuffer, 1, bufferOut, 1, sizeToCopy);
+            return (bufferOut);
         }
 
-        if (predictor_coef_num == 0x1f) { // 11111 - max value of predictor_coef_num
+        if (predictorCoefNum == 0x1f) { // 11111 - max value of predictorCoefNum
             // second-best case scenario for fir decompression,
 			// error describes a small difference from the previous sample only
-            if (output_size <= 1)
-                return (buffer_out);
+            if (outputSize <= 1)
+                return (bufferOut);
 
-            for (int i = 0; i < (output_size - 1); i++) {
-                int prev_value = 0;
-                int error_value = 0;
+            for (int i = 0; i < (outputSize - 1); i++) {
+                int prevValue = 0;
+                int errorValue = 0;
 
-                prev_value = buffer_out[i];
-                error_value = error_buffer[i + 1];
+                prevValue = bufferOut[i];
+                errorValue = errorBuffer[i + 1];
 
-                bitsmove = 32 - readsamplesize;
-                buffer_out[i + 1] = (((prev_value + error_value) << bitsmove) >> bitsmove);
+                bitsMove = 32 - readSampleSize;
+                bufferOut[i + 1] = (((prevValue + errorValue) << bitsMove) >> bitsMove);
             }
-            return (buffer_out);
+            return (bufferOut);
         }
 
         // read warm-up samples
-        if (predictor_coef_num > 0) {
-            for (int i = 0; i < predictor_coef_num; i++) {
+        if (predictorCoefNum > 0) {
+            for (int i = 0; i < predictorCoefNum; i++) {
                 int val = 0;
 
-                val = buffer_out[i] + error_buffer[i + 1];
+                val = bufferOut[i] + errorBuffer[i + 1];
 
-                bitsmove = 32 - readsamplesize;
+                bitsMove = 32 - readSampleSize;
 
-                val = ((val << bitsmove) >> bitsmove);
+                val = ((val << bitsMove) >> bitsMove);
 
-                buffer_out[i + 1] = val;
+                bufferOut[i + 1] = val;
             }
         }
 
         // general case
-        if (predictor_coef_num > 0) {
-            buffer_out_idx = 0;
-            for (int i = predictor_coef_num + 1; i < output_size; i++) {
+        if (predictorCoefNum > 0) {
+            bufferOutIndex = 0;
+            for (int i = predictorCoefNum + 1; i < outputSize; i++) {
                 int j;
                 int sum = 0;
-                int outval;
-                int error_val = error_buffer[i];
+                int outVal;
+                int errorVal = errorBuffer[i];
 
-                for (j = 0; j < predictor_coef_num; j++) {
-                    sum += (buffer_out[buffer_out_idx + predictor_coef_num - j] - buffer_out[buffer_out_idx]) * predictor_coef_table[j];
+                for (j = 0; j < predictorCoefNum; j++) {
+                    sum += (bufferOut[bufferOutIndex + predictorCoefNum - j] - bufferOut[bufferOutIndex]) * predictorCoefTable[j];
                 }
 
-                outval = (1 << (predictor_quantitization - 1)) + sum;
-                outval = outval >> predictor_quantitization;
-                outval = outval + buffer_out[buffer_out_idx] + error_val;
-                bitsmove = 32 - readsamplesize;
+                outVal = (1 << (predictorQuantitization - 1)) + sum;
+                outVal = outVal >> predictorQuantitization;
+                outVal = outVal + bufferOut[bufferOutIndex] + errorVal;
+                bitsMove = 32 - readSampleSize;
 
-                outval = ((outval << bitsmove) >> bitsmove);
+                outVal = ((outVal << bitsMove) >> bitsMove);
 
-                buffer_out[buffer_out_idx + predictor_coef_num + 1] = outval;
+                bufferOut[bufferOutIndex + predictorCoefNum + 1] = outVal;
 
-                if (error_val > 0) {
-                    int predictor_num = predictor_coef_num - 1;
+                if (errorVal > 0) {
+                    int predictorNum = predictorCoefNum - 1;
 
-                    while (predictor_num >= 0 && error_val > 0) {
-                        int val = buffer_out[buffer_out_idx] - buffer_out[buffer_out_idx + predictor_coef_num - predictor_num];
+                    while (predictorNum >= 0 && errorVal > 0) {
+                        int val = bufferOut[bufferOutIndex] - bufferOut[bufferOutIndex + predictorCoefNum - predictorNum];
                         int sign = (Integer.compare(val, 0));
 
-                        predictor_coef_table[predictor_num] -= sign;
+                        predictorCoefTable[predictorNum] -= sign;
 
                         val *= sign; // absolute value
 
-                        error_val -= ((val >> predictor_quantitization) * (predictor_coef_num - predictor_num));
+                        errorVal -= ((val >> predictorQuantitization) * (predictorCoefNum - predictorNum));
 
-                        predictor_num--;
+                        predictorNum--;
                     }
-                } else if (error_val < 0) {
-                    int predictor_num = predictor_coef_num - 1;
+                } else if (errorVal < 0) {
+                    int predictorNum = predictorCoefNum - 1;
 
-                    while (predictor_num >= 0 && error_val < 0) {
-                        int val = buffer_out[buffer_out_idx] - buffer_out[buffer_out_idx + predictor_coef_num - predictor_num];
+                    while (predictorNum >= 0 && errorVal < 0) {
+                        int val = bufferOut[bufferOutIndex] - bufferOut[bufferOutIndex + predictorCoefNum - predictorNum];
                         int sign = -(Integer.compare(val, 0));
 
-                        predictor_coef_table[predictor_num] -= sign;
+                        predictorCoefTable[predictorNum] -= sign;
 
                         val *= sign; // neg value
 
-                        error_val -= ((val >> predictor_quantitization) * (predictor_coef_num - predictor_num));
+                        errorVal -= ((val >> predictorQuantitization) * (predictorCoefNum - predictorNum));
 
-                        predictor_num--;
+                        predictorNum--;
                     }
                 }
 
-                buffer_out_idx++;
+                bufferOutIndex++;
             }
         }
-        return buffer_out;
+        return bufferOut;
     }
 
-    private static void deinterlace_16(int[] buffer_a, int[] buffer_b, int[] buffer_out, int numchannels, int numsamples, int interlacing_shift, int interlacing_leftweight) {
+    private static void deinterlace16(int[] bufferA, int[] bufferB, int[] bufferOut, int numChannels, int numSamples, int interlacingShift, int interlacingLeftWeight) {
 
-        if (numsamples <= 0)
+        if (numSamples <= 0)
             return;
 
         // weighted interlacing
-        if (0 != interlacing_leftweight) {
-            for (int i = 0; i < numsamples; i++) {
+        if (0 != interlacingLeftWeight) {
+            for (int i = 0; i < numSamples; i++) {
                 int difference = 0;
                 int midright = 0;
                 int left = 0;
                 int right = 0;
 
-                midright = buffer_a[i];
-                difference = buffer_b[i];
+                midright = bufferA[i];
+                difference = bufferB[i];
 
-                right = (midright - ((difference * interlacing_leftweight) >> interlacing_shift));
+                right = (midright - ((difference * interlacingLeftWeight) >> interlacingShift));
                 left = (right + difference);
 
                 // output is always little endian
 
-                buffer_out[i * numchannels] = left;
-                buffer_out[i * numchannels + 1] = right;
+                bufferOut[i * numChannels] = left;
+                bufferOut[i * numChannels + 1] = right;
             }
 
             return;
         }
 
         // otherwise basic interlacing took place
-        for (int i = 0; i < numsamples; i++) {
+        for (int i = 0; i < numSamples; i++) {
             int left = 0;
             int right = 0;
 
-            left = buffer_a[i];
-            right = buffer_b[i];
+            left = bufferA[i];
+            right = bufferB[i];
 
             // output is always little endian
 
-            buffer_out[i * numchannels] = left;
-            buffer_out[i * numchannels + 1] = right;
+            bufferOut[i * numChannels] = left;
+            bufferOut[i * numChannels + 1] = right;
         }
     }
 
-    private static void deinterlace_24(int[] buffer_a, int[] buffer_b, int uncompressed_bytes, int[] uncompressed_bytes_buffer_a, int[] uncompressed_bytes_buffer_b, int[] buffer_out, int numchannels, int numsamples, int interlacing_shift, int interlacing_leftweight) {
-        if (numsamples <= 0)
+    private static void deinterlace24(int[] bufferA, int[] bufferB, int uncompressedBytes,
+                                      int[] uncompressedBytesBufferA, int[] uncompressedBytesBufferB, int[] bufferOut,
+                                      int numChannels, int numSamples, int interlacingShift, int interlacingLeftWeight) {
+        if (numSamples <= 0)
             return;
 
         // weighted interlacing
-        if (interlacing_leftweight != 0) {
-            for (int i = 0; i < numsamples; i++) {
+        if (interlacingLeftWeight != 0) {
+            for (int i = 0; i < numSamples; i++) {
                 int difference = 0;
                 int midright = 0;
                 int left = 0;
                 int right = 0;
 
-                midright = buffer_a[i];
-                difference = buffer_b[i];
+                midright = bufferA[i];
+                difference = bufferB[i];
 
-                right = midright - ((difference * interlacing_leftweight) >> interlacing_shift);
+                right = midright - ((difference * interlacingLeftWeight) >> interlacingShift);
                 left = right + difference;
 
-                if (uncompressed_bytes != 0) {
-                    int mask = ~(0xFFFFFFFF << (uncompressed_bytes * 8));
-                    left <<= (uncompressed_bytes * 8);
-                    right <<= (uncompressed_bytes * 8);
+                if (uncompressedBytes != 0) {
+                    int mask = ~(0xFFFFFFFF << (uncompressedBytes * 8));
+                    left <<= (uncompressedBytes * 8);
+                    right <<= (uncompressedBytes * 8);
 
-                    left = left | (uncompressed_bytes_buffer_a[i] & mask);
-                    right = right | (uncompressed_bytes_buffer_b[i] & mask);
+                    left = left | (uncompressedBytesBufferA[i] & mask);
+                    right = right | (uncompressedBytesBufferB[i] & mask);
                 }
 
-                buffer_out[i * numchannels * 3] = (left & 0xFF);
-                buffer_out[i * numchannels * 3 + 1] = ((left >> 8) & 0xFF);
-                buffer_out[i * numchannels * 3 + 2] = ((left >> 16) & 0xFF);
+                bufferOut[i * numChannels * 3] = (left & 0xFF);
+                bufferOut[i * numChannels * 3 + 1] = ((left >> 8) & 0xFF);
+                bufferOut[i * numChannels * 3 + 2] = ((left >> 16) & 0xFF);
 
-                buffer_out[i * numchannels * 3 + 3] = (right & 0xFF);
-                buffer_out[i * numchannels * 3 + 4] = ((right >> 8) & 0xFF);
-                buffer_out[i * numchannels * 3 + 5] = ((right >> 16) & 0xFF);
+                bufferOut[i * numChannels * 3 + 3] = (right & 0xFF);
+                bufferOut[i * numChannels * 3 + 4] = ((right >> 8) & 0xFF);
+                bufferOut[i * numChannels * 3 + 5] = ((right >> 16) & 0xFF);
             }
 
             return;
         }
 
         // otherwise basic interlacing took place
-        for (int i = 0; i < numsamples; i++) {
+        for (int i = 0; i < numSamples; i++) {
             int left = 0;
             int right = 0;
 
-            left = buffer_a[i];
-            right = buffer_b[i];
+            left = bufferA[i];
+            right = bufferB[i];
 
-            if (uncompressed_bytes != 0) {
-                int mask = ~(0xFFFFFFFF << (uncompressed_bytes * 8));
-                left <<= (uncompressed_bytes * 8);
-                right <<= (uncompressed_bytes * 8);
+            if (uncompressedBytes != 0) {
+                int mask = ~(0xFFFFFFFF << (uncompressedBytes * 8));
+                left <<= (uncompressedBytes * 8);
+                right <<= (uncompressedBytes * 8);
 
-                left = left | (uncompressed_bytes_buffer_a[i] & mask);
-                right = right | (uncompressed_bytes_buffer_b[i] & mask);
+                left = left | (uncompressedBytesBufferA[i] & mask);
+                right = right | (uncompressedBytesBufferB[i] & mask);
             }
 
-            buffer_out[i * numchannels * 3] = (left & 0xFF);
-            buffer_out[i * numchannels * 3 + 1] = ((left >> 8) & 0xFF);
-            buffer_out[i * numchannels * 3 + 2] = ((left >> 16) & 0xFF);
+            bufferOut[i * numChannels * 3] = (left & 0xFF);
+            bufferOut[i * numChannels * 3 + 1] = ((left >> 8) & 0xFF);
+            bufferOut[i * numChannels * 3 + 2] = ((left >> 16) & 0xFF);
 
-            buffer_out[i * numchannels * 3 + 3] = (right & 0xFF);
-            buffer_out[i * numchannels * 3 + 4] = ((right >> 8) & 0xFF);
-            buffer_out[i * numchannels * 3 + 5] = ((right >> 16) & 0xFF);
+            bufferOut[i * numChannels * 3 + 3] = (right & 0xFF);
+            bufferOut[i * numChannels * 3 + 4] = ((right >> 8) & 0xFF);
+            bufferOut[i * numChannels * 3 + 5] = ((right >> 16) & 0xFF);
         }
     }
 
-    public static AlacFile create(int samplesize, int numchannels) {
-        AlacFile newfile = new AlacFile();
+    public static AlacFile create(int sampleSize, int numChannels) {
+        AlacFile newFile = new AlacFile();
 
-        newfile.samplesize = samplesize;
-        newfile.numchannels = numchannels;
-        newfile.bytespersample = (samplesize / 8) * numchannels;
+        newFile.sampleSize = sampleSize;
+        newFile.numChannels = numChannels;
+        newFile.bytesPerSample = (sampleSize / 8) * numChannels;
 
-        return newfile;
+        return newFile;
     }
 
-    public void entropy_rice_decode(int[] outputBuffer, int outputSize, int readSampleSize, int rice_initialhistory, int rice_kmodifier, int rice_historymult, int rice_kmodifier_mask) {
-        int history = rice_initialhistory;
+    public void decodeEntropyRice(int[] outputBuffer, int outputSize, int readSampleSize, int riceInitialHistory,
+                                  int riceKModifier, int riceHistoryMult, int riceKModifierMask) {
+        int history = riceInitialHistory;
         int outputCount = 0;
         int signModifier = 0;
 
@@ -307,15 +310,15 @@ class AlacFile {
             int finalValue = 0;
             int k = 0;
 
-            k = 31 - rice_kmodifier - this.lz.count_leading_zeros((history >> 9) + 3);
+            k = 31 - riceKModifier - this.lz.countLeadingZeros((history >> 9) + 3);
 
             if (k < 0)
-                k += rice_kmodifier;
+                k += riceKModifier;
             else
-                k = rice_kmodifier;
+                k = riceKModifier;
 
-            // note: don't use rice_kmodifier_mask here (set mask to 0xFFFFFFFF)
-            decodedValue = entropy_decode_value(readSampleSize, k, 0xFFFFFFFF);
+            // note: don't use riceKModifierMask here (set mask to 0xFFFFFFFF)
+            decodedValue = decodeEntropyValue(readSampleSize, k, 0xFFFFFFFF);
 
             decodedValue += signModifier;
             finalValue = ((decodedValue + 1) / 2); // inc by 1 and shift out sign bit
@@ -327,7 +330,7 @@ class AlacFile {
             signModifier = 0;
 
             // update history
-            history += (decodedValue * rice_historymult) - ((history * rice_historymult) >> 9);
+            history += (decodedValue * riceHistoryMult) - ((history * riceHistoryMult) >> 9);
 
             if (decodedValue > 0xFFFF)
                 history = 0xFFFF;
@@ -338,10 +341,10 @@ class AlacFile {
 
                 signModifier = 1;
 
-                k = this.lz.count_leading_zeros(history) + ((history + 16) / 64) - 24;
+                k = this.lz.countLeadingZeros(history) + ((history + 16) / 64) - 24;
 
                 // note: blockSize is always 16bit
-                blockSize = entropy_decode_value(16, k, rice_kmodifier_mask);
+                blockSize = decodeEntropyValue(16, k, riceKModifierMask);
 
                 // got blockSize 0s
                 if (blockSize > 0) {
@@ -364,91 +367,91 @@ class AlacFile {
     }
 
     /** */
-    public int decodeFrame(byte[] inbuffer, int[] outbuffer, int outputsize) {
+    public int decodeFrame(byte[] inBuffer, int[] outBuffer, int outputSize) {
         int channels;
-        int outputSamples = this.setinfo_max_samples_per_frame;
+        int outputSamples = this.setInfo_maxSamplesPerFrame;
 
         // setup the stream
-        this.input_buffer = inbuffer;
-        this.input_buffer_bitaccumulator = 0;
-        this.ibIdx = 0;
+        this.inputBuffer = inBuffer;
+        this.inputBufferBitAccumulator = 0;
+        this.ibIndex = 0;
 
-        channels = readbits(3);
+        channels = readBits(3);
 
-        outputsize = outputSamples * this.bytespersample;
+        outputSize = outputSamples * this.bytesPerSample;
 
         if (channels == 0) { // 1 channel
-            int hassize;
-            int isnotcompressed;
-            int readsamplesize;
+            int hasSize;
+            int isNotCompressed;
+            int readSampleSize;
 
-            int uncompressed_bytes;
-            int ricemodifier;
+            int uncompressedBytes;
+            int riceModifier;
 
             int tempPred = 0;
 
             // 2^result = something to do with output waiting.
 			// perhaps matters if we read > 1 frame in a pass?
-            readbits(4);
+            readBits(4);
 
-            readbits(12); // unknown, skip 12 bits
+            readBits(12); // unknown, skip 12 bits
 
-            hassize = readbits(1); // the output sample size is stored soon
+            hasSize = readBits(1); // the output sample size is stored soon
 
-            uncompressed_bytes = readbits(2); // number of bytes in the (compressed) stream that are not compressed
+            uncompressedBytes = readBits(2); // number of bytes in the (compressed) stream that are not compressed
 
-            isnotcompressed = readbits(1); // whether the frame is compressed
+            isNotCompressed = readBits(1); // whether the frame is compressed
 
-            if (hassize != 0) {
+            if (hasSize != 0) {
                 // now read the number of samples,
 				// as a 32bit integer
-                outputSamples = readbits(32);
-                outputsize = outputSamples * this.bytespersample;
+                outputSamples = readBits(32);
+                outputSize = outputSamples * this.bytesPerSample;
             }
 
-            readsamplesize = this.setinfo_sample_size - (uncompressed_bytes * 8);
+            readSampleSize = this.setInfo_sampleSize - (uncompressedBytes * 8);
 
-            if (isnotcompressed == 0) { // so it is compressed
-                int[] predictor_coef_table = this.predictor_coef_table;
-                int predictor_coef_num;
-                int prediction_type;
-                int prediction_quantitization;
+            if (isNotCompressed == 0) { // so it is compressed
+                int[] predictorCoefTable = this.predictorCoefTable;
+                int predictorCoefNum;
+                int predictionType;
+                int predictionQuantitization;
 
                 // skip 16 bits, not sure what they are. seem to be used in
                 // two channel case
-                readbits(8);
-                readbits(8);
+                readBits(8);
+                readBits(8);
 
-                prediction_type = readbits(4);
-                prediction_quantitization = readbits(4);
+                predictionType = readBits(4);
+                predictionQuantitization = readBits(4);
 
-                ricemodifier = readbits(3);
-                predictor_coef_num = readbits(5);
+                riceModifier = readBits(3);
+                predictorCoefNum = readBits(5);
 
                 // read the predictor table
 
-                for (int i = 0; i < predictor_coef_num; i++) {
-                    tempPred = readbits(16);
+                for (int i = 0; i < predictorCoefNum; i++) {
+                    tempPred = readBits(16);
                     if (tempPred > 32767) {
                         // the predictor coef table values are only 16 bit signed
                         tempPred = tempPred - 65536;
                     }
 
-                    predictor_coef_table[i] = tempPred;
+                    predictorCoefTable[i] = tempPred;
                 }
 
-                if (uncompressed_bytes != 0) {
+                if (uncompressedBytes != 0) {
                     for (int i = 0; i < outputSamples; i++) {
-                        this.uncompressed_bytes_buffer_a[i] = readbits(uncompressed_bytes * 8);
+                        this.uncompressedBytesBufferA[i] = readBits(uncompressedBytes * 8);
                     }
                 }
 
-                this.entropy_rice_decode(this.predicterror_buffer_a, outputSamples, readsamplesize, this.setinfo_rice_initialhistory, this.setinfo_rice_kmodifier, ricemodifier * (this.setinfo_rice_historymult / 4), (1 << this.setinfo_rice_kmodifier) - 1);
+                this.decodeEntropyRice(this.predicterrorBufferA, outputSamples, readSampleSize, this.setInfo_riceInitialHistory, this.setInfo_riceKModifier, riceModifier * (this.setInfo_riceHistoryMult / 4), (1 << this.setInfo_riceKModifier) - 1);
 
-                if (prediction_type == 0) { // adaptive fir
-                    this.outputsamples_buffer_a = predictor_decompress_fir_adapt(this.predicterror_buffer_a, outputSamples, readsamplesize, predictor_coef_table, predictor_coef_num, prediction_quantitization);
+                if (predictionType == 0) { // adaptive fir
+                    this.outputSamplesBufferA = predictorDecompressFirAdapt(this.predicterrorBufferA, outputSamples, readSampleSize, predictorCoefTable, predictorCoefNum, predictionQuantitization);
                 } else {
-                    logger.warning("FIXME: unhandled predicition type: " + prediction_type);
+                    logger.warning("FIXME: unhandled predicition type: " + predictionType);
 
                     // i think the only other prediction type (or perhaps this is just a
 					// boolean?) runs adaptive fir twice.. like:
@@ -458,266 +461,266 @@ class AlacFile {
                 }
 
             } else { // not compressed, easy case
-                if (this.setinfo_sample_size <= 16) {
+                if (this.setInfo_sampleSize <= 16) {
                     int bitsmove;
                     for (int i = 0; i < outputSamples; i++) {
-                        int audiobits = readbits(this.setinfo_sample_size);
-                        bitsmove = 32 - this.setinfo_sample_size;
+                        int audiobits = readBits(this.setInfo_sampleSize);
+                        bitsmove = 32 - this.setInfo_sampleSize;
 
                         audiobits = ((audiobits << bitsmove) >> bitsmove);
 
-                        this.outputsamples_buffer_a[i] = audiobits;
+                        this.outputSamplesBufferA[i] = audiobits;
                     }
                 } else {
                     int m = 1 << (24 - 1);
                     for (int i = 0; i < outputSamples; i++) {
                         int audiobits;
 
-                        audiobits = readbits(16);
+                        audiobits = readBits(16);
                         // special case of sign extension..
 						// as we'll be ORing the low 16bits into this
-                        audiobits = audiobits << (this.setinfo_sample_size - 16);
-                        audiobits = audiobits | readbits(this.setinfo_sample_size - 16);
+                        audiobits = audiobits << (this.setInfo_sampleSize - 16);
+                        audiobits = audiobits | readBits(this.setInfo_sampleSize - 16);
                         int x = audiobits & ((1 << 24) - 1);
                         audiobits = (x ^ m) - m; // sign extend 24 bits
 
-                        this.outputsamples_buffer_a[i] = audiobits;
+                        this.outputSamplesBufferA[i] = audiobits;
                     }
                 }
-                uncompressed_bytes = 0; // always 0 for uncompressed
+                uncompressedBytes = 0; // always 0 for uncompressed
             }
 
-            switch (this.setinfo_sample_size) {
+            switch (this.setInfo_sampleSize) {
             case 16: {
 
                 for (int i = 0; i < outputSamples; i++) {
-                    int sample = this.outputsamples_buffer_a[i];
-                    outbuffer[i * this.numchannels] = sample;
+                    int sample = this.outputSamplesBufferA[i];
+                    outBuffer[i * this.numChannels] = sample;
 
                     // We have to handle the case where the data is actually mono, but the stsd atom says it has 2 channels
                     // in this case we create a stereo file where one of the channels is silent. If mono and 1 channel this value
                     // will be overwritten in the next iteration
 
-                    outbuffer[(i * this.numchannels) + 1] = 0;
+                    outBuffer[(i * this.numChannels) + 1] = 0;
                 }
                 break;
             }
             case 24: {
                 for (int i = 0; i < outputSamples; i++) {
-                    int sample = this.outputsamples_buffer_a[i];
+                    int sample = this.outputSamplesBufferA[i];
 
-                    if (uncompressed_bytes != 0) {
+                    if (uncompressedBytes != 0) {
                         int mask = 0;
-                        sample = sample << (uncompressed_bytes * 8);
-                        mask = ~(0xffff_ffff << (uncompressed_bytes * 8));
-                        sample = sample | (this.uncompressed_bytes_buffer_a[i] & mask);
+                        sample = sample << (uncompressedBytes * 8);
+                        mask = ~(0xffff_ffff << (uncompressedBytes * 8));
+                        sample = sample | (this.uncompressedBytesBufferA[i] & mask);
                     }
 
-                    outbuffer[i * this.numchannels * 3] = ((sample) & 0xFF);
-                    outbuffer[i * this.numchannels * 3 + 1] = ((sample >> 8) & 0xFF);
-                    outbuffer[i * this.numchannels * 3 + 2] = ((sample >> 16) & 0xFF);
+                    outBuffer[i * this.numChannels * 3] = ((sample) & 0xFF);
+                    outBuffer[i * this.numChannels * 3 + 1] = ((sample >> 8) & 0xFF);
+                    outBuffer[i * this.numChannels * 3 + 2] = ((sample >> 16) & 0xFF);
 
                     // We have to handle the case where the data is actually mono, but the stsd atom says it has 2 channels
 					// in this case we create a stereo file where one of the channels is silent. If mono and 1 channel this value
 					// will be overwritten in the next iteration
 
-                    outbuffer[i * this.numchannels * 3 + 3] = 0;
-                    outbuffer[i * this.numchannels * 3 + 4] = 0;
-                    outbuffer[i * this.numchannels * 3 + 5] = 0;
+                    outBuffer[i * this.numChannels * 3 + 3] = 0;
+                    outBuffer[i * this.numChannels * 3 + 4] = 0;
+                    outBuffer[i * this.numChannels * 3 + 5] = 0;
 
                 }
                 break;
             }
             case 20:
             case 32:
-                logger.warning("FIXME: unimplemented sample size " + this.setinfo_sample_size);
+                logger.warning("FIXME: unimplemented sample size " + this.setInfo_sampleSize);
             default:
             }
         } else if (channels == 1) { // 2 channels
-            int hassize;
-            int isnotcompressed;
-            int readsamplesize;
+            int hasSize;
+            int isNotCompressed;
+            int readSampleSize;
 
-            int uncompressed_bytes;
+            int uncompressedBytes;
 
-            int interlacing_shift;
-            int interlacing_leftweight;
+            int interlacingShift;
+            int interlacingLeftWeight;
 
             // 2^result = something to do with output waiting.
 			// perhaps matters if we read > 1 frame in a pass?
-            readbits(4);
+            readBits(4);
 
-            readbits(12); // unknown, skip 12 bits
+            readBits(12); // unknown, skip 12 bits
 
-            hassize = readbits(1); // the output sample size is stored soon
+            hasSize = readBits(1); // the output sample size is stored soon
 
-            uncompressed_bytes = readbits(2); // the number of bytes in the (compressed) stream that are not compressed
+            uncompressedBytes = readBits(2); // the number of bytes in the (compressed) stream that are not compressed
 
-            isnotcompressed = readbits(1); // whether the frame is compressed
+            isNotCompressed = readBits(1); // whether the frame is compressed
 
-            if (hassize != 0) {
+            if (hasSize != 0) {
                 // now read the number of samples,
                 // as a 32bit integer
-                outputSamples = readbits(32);
-                outputsize = outputSamples * this.bytespersample;
+                outputSamples = readBits(32);
+                outputSize = outputSamples * this.bytesPerSample;
             }
 
-            readsamplesize = this.setinfo_sample_size - (uncompressed_bytes * 8) + 1;
+            readSampleSize = this.setInfo_sampleSize - (uncompressedBytes * 8) + 1;
 
-            if (isnotcompressed == 0) { // compressed
-                int[] predictor_coef_table_a = this.predictor_coef_table_a;
-                int predictor_coef_num_a;
-                int prediction_type_a;
-                int prediction_quantitization_a;
-                int ricemodifier_a;
+            if (isNotCompressed == 0) { // compressed
+                int[] predictorCoefTableA = this.predictorCoefTableA;
+                int predictorCoefNumA;
+                int predictionTypeA;
+                int predictionQuantitizationA;
+                int riceModifierA;
 
-                int[] predictor_coef_table_b = this.predictor_coef_table_b;
-                int predictor_coef_num_b;
-                int prediction_type_b;
-                int prediction_quantitization_b;
-                int ricemodifier_b;
+                int[] predictorCoefTableB = this.predictorCoefTableB;
+                int predictorCoefNumB;
+                int predictionTypeB;
+                int predictionQuantitizationB;
+                int riceModifierB;
 
                 int tempPred = 0;
 
-                interlacing_shift = readbits(8);
-                interlacing_leftweight = readbits(8);
+                interlacingShift = readBits(8);
+                interlacingLeftWeight = readBits(8);
 
                 // channel 1
-                prediction_type_a = readbits(4);
-                prediction_quantitization_a = readbits(4);
+                predictionTypeA = readBits(4);
+                predictionQuantitizationA = readBits(4);
 
-                ricemodifier_a = readbits(3);
-                predictor_coef_num_a = readbits(5);
+                riceModifierA = readBits(3);
+                predictorCoefNumA = readBits(5);
 
                 // read the predictor table
 
-                for (int i = 0; i < predictor_coef_num_a; i++) {
-                    tempPred = readbits(16);
+                for (int i = 0; i < predictorCoefNumA; i++) {
+                    tempPred = readBits(16);
                     if (tempPred > 32767) {
                         // the predictor coef table values are only 16bit signed
                         tempPred = tempPred - 65536;
                     }
-                    predictor_coef_table_a[i] = tempPred;
+                    predictorCoefTableA[i] = tempPred;
                 }
 
                 // channel 2
-                prediction_type_b = readbits(4);
-                prediction_quantitization_b = readbits(4);
+                predictionTypeB = readBits(4);
+                predictionQuantitizationB = readBits(4);
 
-                ricemodifier_b = readbits(3);
-                predictor_coef_num_b = readbits(5);
+                riceModifierB = readBits(3);
+                predictorCoefNumB = readBits(5);
 
                 // read the predictor table
 
-                for (int i = 0; i < predictor_coef_num_b; i++) {
-                    tempPred = readbits(16);
+                for (int i = 0; i < predictorCoefNumB; i++) {
+                    tempPred = readBits(16);
                     if (tempPred > 32767) {
                         // the predictor coef table values are only 16bit signed
                         tempPred = tempPred - 65536;
                     }
-                    predictor_coef_table_b[i] = tempPred;
+                    predictorCoefTableB[i] = tempPred;
                 }
 
                 //
-                if (uncompressed_bytes != 0) {
+                if (uncompressedBytes != 0) {
                     // see mono case
                     for (int i = 0; i < outputSamples; i++) {
-                        this.uncompressed_bytes_buffer_a[i] = readbits(uncompressed_bytes * 8);
-                        this.uncompressed_bytes_buffer_b[i] = readbits(uncompressed_bytes * 8);
+                        this.uncompressedBytesBufferA[i] = readBits(uncompressedBytes * 8);
+                        this.uncompressedBytesBufferB[i] = readBits(uncompressedBytes * 8);
                     }
                 }
 
                 // channel 1
 
-                this.entropy_rice_decode(this.predicterror_buffer_a, outputSamples, readsamplesize, this.setinfo_rice_initialhistory, this.setinfo_rice_kmodifier, ricemodifier_a * (this.setinfo_rice_historymult / 4), (1 << this.setinfo_rice_kmodifier) - 1);
+                this.decodeEntropyRice(this.predicterrorBufferA, outputSamples, readSampleSize, this.setInfo_riceInitialHistory, this.setInfo_riceKModifier, riceModifierA * (this.setInfo_riceHistoryMult / 4), (1 << this.setInfo_riceKModifier) - 1);
 
-                if (prediction_type_a == 0) { // adaptive fir
+                if (predictionTypeA == 0) { // adaptive fir
 
-                    this.outputsamples_buffer_a = predictor_decompress_fir_adapt(this.predicterror_buffer_a, outputSamples, readsamplesize, predictor_coef_table_a, predictor_coef_num_a, prediction_quantitization_a);
+                    this.outputSamplesBufferA = predictorDecompressFirAdapt(this.predicterrorBufferA, outputSamples, readSampleSize, predictorCoefTableA, predictorCoefNumA, predictionQuantitizationA);
 
                 } else { // see mono case
-                    logger.warning("FIXME: unhandled predicition type: " + prediction_type_a);
+                    logger.warning("FIXME: unhandled predicition type: " + predictionTypeA);
                 }
 
                 // channel 2
-                this.entropy_rice_decode(this.predicterror_buffer_b, outputSamples, readsamplesize, this.setinfo_rice_initialhistory, this.setinfo_rice_kmodifier, ricemodifier_b * (this.setinfo_rice_historymult / 4), (1 << this.setinfo_rice_kmodifier) - 1);
+                this.decodeEntropyRice(this.predicterrorBufferB, outputSamples, readSampleSize, this.setInfo_riceInitialHistory, this.setInfo_riceKModifier, riceModifierB * (this.setInfo_riceHistoryMult / 4), (1 << this.setInfo_riceKModifier) - 1);
 
-                if (prediction_type_b == 0) { // adaptive fir
-                    this.outputsamples_buffer_b = predictor_decompress_fir_adapt(this.predicterror_buffer_b, outputSamples, readsamplesize, predictor_coef_table_b, predictor_coef_num_b, prediction_quantitization_b);
+                if (predictionTypeB == 0) { // adaptive fir
+                    this.outputsamplesBufferB = predictorDecompressFirAdapt(this.predicterrorBufferB, outputSamples, readSampleSize, predictorCoefTableB, predictorCoefNumB, predictionQuantitizationB);
                 } else {
-                    logger.warning("FIXME: unhandled predicition type: " + prediction_type_b);
+                    logger.warning("FIXME: unhandled predicition type: " + predictionTypeB);
                 }
             } else { // not compressed, easy case
-                if (this.setinfo_sample_size <= 16) {
-                    int bitsmove;
+                if (this.setInfo_sampleSize <= 16) {
+                    int bitsMove;
 
                     for (int i = 0; i < outputSamples; i++) {
-                        int audiobits_a;
-                        int audiobits_b;
+                        int audioBitsA;
+                        int audioBitsB;
 
-                        audiobits_a = readbits(this.setinfo_sample_size);
-                        audiobits_b = readbits(this.setinfo_sample_size);
+                        audioBitsA = readBits(this.setInfo_sampleSize);
+                        audioBitsB = readBits(this.setInfo_sampleSize);
 
-                        bitsmove = 32 - this.setinfo_sample_size;
+                        bitsMove = 32 - this.setInfo_sampleSize;
 
-                        audiobits_a = ((audiobits_a << bitsmove) >> bitsmove);
-                        audiobits_b = ((audiobits_b << bitsmove) >> bitsmove);
+                        audioBitsA = ((audioBitsA << bitsMove) >> bitsMove);
+                        audioBitsB = ((audioBitsB << bitsMove) >> bitsMove);
 
-                        this.outputsamples_buffer_a[i] = audiobits_a;
-                        this.outputsamples_buffer_b[i] = audiobits_b;
+                        this.outputSamplesBufferA[i] = audioBitsA;
+                        this.outputsamplesBufferB[i] = audioBitsB;
                     }
                 } else {
                     int x;
                     int m = 1 << (24 - 1);
 
                     for (int i = 0; i < outputSamples; i++) {
-                        int audiobits_a;
-                        int audiobits_b;
+                        int audioBitsA;
+                        int audioBitsB;
 
-                        audiobits_a = readbits(16);
-                        audiobits_a = audiobits_a << (this.setinfo_sample_size - 16);
-                        audiobits_a = audiobits_a | readbits(this.setinfo_sample_size - 16);
-                        x = audiobits_a & ((1 << 24) - 1);
-                        audiobits_a = (x ^ m) - m; // sign extend 24 bits
+                        audioBitsA = readBits(16);
+                        audioBitsA = audioBitsA << (this.setInfo_sampleSize - 16);
+                        audioBitsA = audioBitsA | readBits(this.setInfo_sampleSize - 16);
+                        x = audioBitsA & ((1 << 24) - 1);
+                        audioBitsA = (x ^ m) - m; // sign extend 24 bits
 
-                        audiobits_b = readbits(16);
-                        audiobits_b = audiobits_b << (this.setinfo_sample_size - 16);
-                        audiobits_b = audiobits_b | readbits(this.setinfo_sample_size - 16);
-                        x = audiobits_b & ((1 << 24) - 1);
-                        audiobits_b = (x ^ m) - m; // sign extend 24 bits
+                        audioBitsB = readBits(16);
+                        audioBitsB = audioBitsB << (this.setInfo_sampleSize - 16);
+                        audioBitsB = audioBitsB | readBits(this.setInfo_sampleSize - 16);
+                        x = audioBitsB & ((1 << 24) - 1);
+                        audioBitsB = (x ^ m) - m; // sign extend 24 bits
 
-                        this.outputsamples_buffer_a[i] = audiobits_a;
-                        this.outputsamples_buffer_b[i] = audiobits_b;
+                        this.outputSamplesBufferA[i] = audioBitsA;
+                        this.outputsamplesBufferB[i] = audioBitsB;
                     }
                 }
-                uncompressed_bytes = 0; // always 0 for uncompressed
-                interlacing_shift = 0;
-                interlacing_leftweight = 0;
+                uncompressedBytes = 0; // always 0 for uncompressed
+                interlacingShift = 0;
+                interlacingLeftWeight = 0;
             }
 
-            switch (this.setinfo_sample_size) {
+            switch (this.setInfo_sampleSize) {
             case 16: {
-                deinterlace_16(this.outputsamples_buffer_a, this.outputsamples_buffer_b, outbuffer, this.numchannels, outputSamples, interlacing_shift, interlacing_leftweight);
+                deinterlace16(this.outputSamplesBufferA, this.outputsamplesBufferB, outBuffer, this.numChannels, outputSamples, interlacingShift, interlacingLeftWeight);
                 break;
             }
             case 24: {
-                deinterlace_24(this.outputsamples_buffer_a, this.outputsamples_buffer_b, uncompressed_bytes, this.uncompressed_bytes_buffer_a, this.uncompressed_bytes_buffer_b, outbuffer, this.numchannels, outputSamples, interlacing_shift, interlacing_leftweight);
+                deinterlace24(this.outputSamplesBufferA, this.outputsamplesBufferB, uncompressedBytes, this.uncompressedBytesBufferA, this.uncompressedBytesBufferB, outBuffer, this.numChannels, outputSamples, interlacingShift, interlacingLeftWeight);
                 break;
             }
             case 20:
             case 32:
             default:
-                logger.warning("FIXME: unimplemented sample size " + this.setinfo_sample_size);
+                logger.warning("FIXME: unimplemented sample size " + this.setInfo_sampleSize);
             }
         }
-        return outputsize;
+        return outputSize;
     }
 
-    public int entropy_decode_value(int readSampleSize, int k, int rice_kmodifier_mask) {
+    public int decodeEntropyValue(int readSampleSize, int k, int riceKModifierMask) {
         int x = 0; // decoded value
 
         // read x, number of 1s before 0 represent the rice value.
-        while (x <= RICE_THRESHOLD && readbit() != 0) {
+        while (x <= RICE_THRESHOLD && readBit() != 0) {
             x++;
         }
 
@@ -725,7 +728,7 @@ class AlacFile {
             // read the number from the bit stream (raw value)
             int value = 0;
 
-            value = readbits(readSampleSize);
+            value = readBits(readSampleSize);
 
             // mask value
             value &= ((0xffff_ffff) >> (32 - readSampleSize));
@@ -733,135 +736,135 @@ class AlacFile {
             x = value;
         } else {
             if (k != 1) {
-                int extraBits = readbits(k);
+                int extraBits = readBits(k);
 
-                x *= (((1 << k) - 1) & rice_kmodifier_mask);
+                x *= (((1 << k) - 1) & riceKModifierMask);
 
                 if (extraBits > 1)
                     x += extraBits - 1;
                 else
-                    unreadbits(1);
+                    unreadBits(1);
             }
         }
 
         return x;
     }
 
-    void unreadbits(int bits) {
-        int new_accumulator = (this.input_buffer_bitaccumulator - bits);
+    void unreadBits(int bits) {
+        int newAccumulator = (this.inputBufferBitAccumulator - bits);
 
-        this.ibIdx += (new_accumulator >> 3);
+        this.ibIndex += (newAccumulator >> 3);
 
-        this.input_buffer_bitaccumulator = (new_accumulator & 7);
-        if (this.input_buffer_bitaccumulator < 0)
-            this.input_buffer_bitaccumulator *= -1;
+        this.inputBufferBitAccumulator = (newAccumulator & 7);
+        if (this.inputBufferBitAccumulator < 0)
+            this.inputBufferBitAccumulator *= -1;
     }
 
     /** reads a single bit */
-    int readbit() {
+    int readBit() {
         int result = 0;
-        int new_accumulator = 0;
+        int newAccumulator = 0;
         int part1 = 0;
 
-        part1 = (this.input_buffer[this.ibIdx] & 0xff);
+        part1 = (this.inputBuffer[this.ibIndex] & 0xff);
 
         result = part1;
 
-        result = result << this.input_buffer_bitaccumulator;
+        result = result << this.inputBufferBitAccumulator;
 
         result = result >> 7 & 1;
 
-        new_accumulator = (this.input_buffer_bitaccumulator + 1);
+        newAccumulator = (this.inputBufferBitAccumulator + 1);
 
-        this.ibIdx += new_accumulator / 8;
+        this.ibIndex += newAccumulator / 8;
 
-        this.input_buffer_bitaccumulator = (new_accumulator % 8);
+        this.inputBufferBitAccumulator = (newAccumulator % 8);
 
         return result;
     }
 
     /** supports reading 1 to 32 bits, in big endian format */
-    int readbits(int bits) {
+    int readBits(int bits) {
         int result = 0;
 
         if (bits > 16) {
             bits -= 16;
 
-            result = readbits_16(16) << bits;
+            result = readBits16(16) << bits;
         }
 
-        result |= readbits_16(bits);
+        result |= readBits16(bits);
 
         return result;
     }
 
     /** supports reading 1 to 16 bits, in big endian format */
-    int readbits_16(int bits) {
+    int readBits16(int bits) {
         int result = 0;
-        int new_accumulator = 0;
+        int newAccumulator = 0;
         int part1 = 0;
         int part2 = 0;
         int part3 = 0;
 
-        part1 = (this.input_buffer[this.ibIdx] & 0xff);
-        part2 = (this.input_buffer[this.ibIdx + 1] & 0xff);
-        part3 = (this.input_buffer[this.ibIdx + 2] & 0xff);
+        part1 = (this.inputBuffer[this.ibIndex] & 0xff);
+        part2 = (this.inputBuffer[this.ibIndex + 1] & 0xff);
+        part3 = (this.inputBuffer[this.ibIndex + 2] & 0xff);
 
         result = ((part1 << 16) | (part2 << 8) | part3);
 
         // shift left by the number of bits we've already read,
 		// so that the top 'n' bits of the 24 bits we read will
 		// be the return bits
-        result = result << this.input_buffer_bitaccumulator;
+        result = result << this.inputBufferBitAccumulator;
 
-        result = result & 0x00ffffff;
+        result = result & 0x00ff_ffff;
 
         // and then only want the top 'n' bits from that, where
 		// n is 'bits'
         result = result >> (24 - bits);
 
-        new_accumulator = (this.input_buffer_bitaccumulator + bits);
+        newAccumulator = (this.inputBufferBitAccumulator + bits);
 
         // increase the buffer pointer if we've read over n bytes.
-        this.ibIdx += (new_accumulator >> 3);
+        this.ibIndex += (newAccumulator >> 3);
 
         // and the remainder goes back into the bit accumulator
-        this.input_buffer_bitaccumulator = (new_accumulator & 7);
+        this.inputBufferBitAccumulator = (newAccumulator & 7);
 
         return result;
     }
 
-    public void alac_set_info(int[] inputbuffer) {
-        int ptrIndex = 0;
-        ptrIndex += 4; // size
-        ptrIndex += 4; // frma
-        ptrIndex += 4; // file
-        ptrIndex += 4; // size
-        ptrIndex += 4; // file
+    public void setAlacInfo(int[] inputBuffer) {
+        int index = 0;
+        index += 4; // size
+        index += 4; // frma
+        index += 4; // file
+        index += 4; // size
+        index += 4; // file
 
-        ptrIndex += 4; // 0 ?
+        index += 4; // 0 ?
 
-        this.setinfo_max_samples_per_frame = ((inputbuffer[ptrIndex] << 24) + (inputbuffer[ptrIndex + 1] << 16) + (inputbuffer[ptrIndex + 2] << 8) + inputbuffer[ptrIndex + 3]); // buffer size / 2 ?
-        ptrIndex += 4;
-        this.setinfo_7a = inputbuffer[ptrIndex];
-        ptrIndex += 1;
-        this.setinfo_sample_size = inputbuffer[ptrIndex];
-        ptrIndex += 1;
-        this.setinfo_rice_historymult = (inputbuffer[ptrIndex] & 0xff);
-        ptrIndex += 1;
-        this.setinfo_rice_initialhistory = (inputbuffer[ptrIndex] & 0xff);
-        ptrIndex += 1;
-        this.setinfo_rice_kmodifier = (inputbuffer[ptrIndex] & 0xff);
-        ptrIndex += 1;
-        this.setinfo_7f = inputbuffer[ptrIndex];
-        ptrIndex += 1;
-        this.setinfo_80 = (inputbuffer[ptrIndex] << 8) + inputbuffer[ptrIndex + 1];
-        ptrIndex += 2;
-        this.setinfo_82 = ((inputbuffer[ptrIndex] << 24) + (inputbuffer[ptrIndex + 1] << 16) + (inputbuffer[ptrIndex + 2] << 8) + inputbuffer[ptrIndex + 3]);
-        ptrIndex += 4;
-        this.setinfo_86 = ((inputbuffer[ptrIndex] << 24) + (inputbuffer[ptrIndex + 1] << 16) + (inputbuffer[ptrIndex + 2] << 8) + inputbuffer[ptrIndex + 3]);
-        ptrIndex += 4;
-        this.setinfo_8a_rate = ((inputbuffer[ptrIndex] << 24) + (inputbuffer[ptrIndex + 1] << 16) + (inputbuffer[ptrIndex + 2] << 8) + inputbuffer[ptrIndex + 3]);
-        ptrIndex += 4;
+        this.setInfo_maxSamplesPerFrame = ((inputBuffer[index] << 24) + (inputBuffer[index + 1] << 16) + (inputBuffer[index + 2] << 8) + inputBuffer[index + 3]); // buffer size / 2 ?
+        index += 4;
+        this.setInfo_7A = inputBuffer[index];
+        index += 1;
+        this.setInfo_sampleSize = inputBuffer[index];
+        index += 1;
+        this.setInfo_riceHistoryMult = (inputBuffer[index] & 0xff);
+        index += 1;
+        this.setInfo_riceInitialHistory = (inputBuffer[index] & 0xff);
+        index += 1;
+        this.setInfo_riceKModifier = (inputBuffer[index] & 0xff);
+        index += 1;
+        this.setInfo_7f = inputBuffer[index];
+        index += 1;
+        this.setInfo_80 = (inputBuffer[index] << 8) + inputBuffer[index + 1];
+        index += 2;
+        this.setInfo_82 = ((inputBuffer[index] << 24) + (inputBuffer[index + 1] << 16) + (inputBuffer[index + 2] << 8) + inputBuffer[index + 3]);
+        index += 4;
+        this.setInfo_86 = ((inputBuffer[index] << 24) + (inputBuffer[index + 1] << 16) + (inputBuffer[index + 2] << 8) + inputBuffer[index + 3]);
+        index += 4;
+        this.setInfo_8a_rate = ((inputBuffer[index] << 24) + (inputBuffer[index + 1] << 16) + (inputBuffer[index + 2] << 8) + inputBuffer[index + 3]);
+        index += 4;
     }
 }
