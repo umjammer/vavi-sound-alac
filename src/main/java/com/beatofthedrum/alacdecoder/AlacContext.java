@@ -79,7 +79,7 @@ logger.fine("reset: " + in.available());
 
         context.setInputStream(fistream);
 
-        // if qtmovie_read returns successfully, the stream is up to
+        // if QtMovieT#read returns successfully, the stream is up to
         // the movie data, which can be used directly by the decoder
         QTMovieT qtMovie = new QTMovieT(context.inputStream);
         headerRead = qtMovie.read(demuxRes);
@@ -129,7 +129,7 @@ logger.fine("reset: " + in.available());
      * sets position in pcm samples
      *
      * @param position position in pcm samples to go to
-     * @throws IllegalArgumentException at get_sample_info
+     * @throws IllegalArgumentException at getSampleInfo
      */
     public void setPosition(long position) throws IOException {
         DemuxResT res = this.demuxRes;

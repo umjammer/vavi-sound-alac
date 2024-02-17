@@ -44,7 +44,7 @@ public class Alac implements AutoCloseable {
 
         context.setInputStream(is);
 
-        // if qtmovie_read returns successfully, the stream is up to
+        // if QTMovieT#read returns successfully, the stream is up to
         // the movie data, which can be used directly by the decoder
         QTMovieT qtMovie = new QTMovieT(context.inputStream);
         DemuxResT demuxRes = new DemuxResT();
