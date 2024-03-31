@@ -100,9 +100,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>vavi</groupId> <!-- vavi / com.github.umjammer -->
+      <groupId>com.github.umjammer</groupId> <!-- vavi / com.github.umjammer -->
       <artifactId>vavi-sound</artifactId>
-      <version>1.0.18-SNAPSHOT</version>
+      <version>1.0.18</version>
     </dependency>
 
     <dependency>
