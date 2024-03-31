@@ -26,6 +26,10 @@ https://jitpack.io/#umjammer/vavi-sound-alac
     clip.loop(Clip.LOOP_CONTINUOUSLY);
 ```
 
+## References
+
+ * https://github.com/flacon/alacenc
+
 ## TODO
 
  * play clip w/o format conversion (possible?)

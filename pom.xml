@@ -14,6 +14,44 @@
   <url>https://github.com/umjammer/vavi-sound-alac</url>
   <description>ALAC Java sound SPI</description>
 
+  <properties>
+    <vavi.test.volume>0.02</vavi.test.volume>
+  </properties>
+
+  <profiles>
+    <profile>
+      <id>local</id>
+      <activation>
+        <file>
+          <exists>${basedir}/local.properties</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>properties-maven-plugin</artifactId>
+            <version>1.1.0</version>
+            <executions>
+              <execution>
+                <id>read-properties</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>read-project-properties</goal>
+                </goals>
+                <configuration>
+                  <files>
+                    <file>${basedir}/local.properties</file>
+                  </files>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <build>
     <plugins>
       <plugin>
@@ -32,7 +70,7 @@
           <argLine>
             --add-opens java.base/java.io=ALL-UNNAMED
             -Djava.util.logging.config.file=${project.build.testOutputDirectory}/logging.properties
-            -Dvavi.test.volume=0.02
+            -Dvavi.test.volume=${vavi.test.volume}
           </argLine>
           <trimStackTrace>false</trimStackTrace>
           <reuseForks>false</reuseForks>
@@ -53,7 +91,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.10.1</version>
+        <version>5.10.2</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -62,9 +100,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.github.umjammer</groupId> <!-- vavi / com.github.umjammer -->
+      <groupId>vavi</groupId> <!-- vavi / com.github.umjammer -->
       <artifactId>vavi-sound</artifactId>
-      <version>1.0.16</version>
+      <version>1.0.18-SNAPSHOT</version>
     </dependency>
 
     <dependency>
