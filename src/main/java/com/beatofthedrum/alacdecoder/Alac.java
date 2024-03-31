@@ -30,12 +30,13 @@ public class Alac implements AutoCloseable {
      * @param is accepts only FileInputStream or InputStream which supports mark
      *           if "moov" chank in the alac mp4 container is located at back of data,
      *           mark might not work well.
+     * @throws IllegalArgumentException maybe {@code is} is not alac
      */
     public Alac(InputStream is) throws IOException {
         context = new AlacContext();
 
         if (!(is instanceof FileInputStream) && !is.markSupported()) {
-            throw new IllegalArgumentException("is must be mark supported or FileInputStream");
+            throw new IOException("is must be mark supported or FileInputStream");
         }
         if (is.markSupported()) {
             int whole = is.available();
@@ -70,7 +71,7 @@ logger.fine("seek: 0");
 } catch (IOException e) {
  logger.fine(e.getMessage());
 }
-            throw new IOException(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
         } else if (headerRead == 3) {
             // This section is used when the stream system being used doesn't
             // support seeking
