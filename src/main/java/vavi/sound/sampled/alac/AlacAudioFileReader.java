@@ -11,9 +11,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.logging.Level;
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -22,7 +23,8 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.sound.sampled.spi.AudioFileReader;
 
 import com.beatofthedrum.alacdecoder.Alac;
-import vavi.util.Debug;
+
+import static java.lang.System.getLogger;
 
 
 /**
@@ -34,6 +36,8 @@ import vavi.util.Debug;
  * @version 0.00 111022 nsano initial version <br>
  */
 public class AlacAudioFileReader extends AudioFileReader {
+
+    private static final Logger logger = getLogger(AlacAudioFileReader.class.getName());
 
     @Override
     public AudioFileFormat getAudioFileFormat(File file) throws UnsupportedAudioFileException, IOException {
@@ -69,13 +73,13 @@ public class AlacAudioFileReader extends AudioFileReader {
      * @exception IOException if an I/O exception occurs.
      */
     protected AudioFileFormat getAudioFileFormat(InputStream bitStream, int mediaLength) throws UnsupportedAudioFileException, IOException {
-Debug.println(Level.FINE, "enter available: " + bitStream.available());
+logger.log(Level.DEBUG, "enter available: " + bitStream.available());
         Alac alac;
         try {
             alac = new Alac(bitStream);
         } catch (Exception e) {
-Debug.println(Level.FINER, "error exit available: " + bitStream.available());
-Debug.printStackTrace(Level.FINEST, e);
+logger.log(Level.TRACE, "error exit available: " + bitStream.available());
+logger.log(Level.TRACE, e.getMessage(), e);
             throw (UnsupportedAudioFileException) new UnsupportedAudioFileException(e.getMessage()).initCause(e);
         }
         // TODO AudioSystem.NOT_SPECIFIED cause IllegalArgumentException at Clip#open()

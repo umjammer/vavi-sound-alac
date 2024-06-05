@@ -9,12 +9,15 @@
 package com.beatofthedrum.alacdecoder;
 
 import java.io.IOException;
-import java.util.logging.Logger;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
+import static java.lang.System.getLogger;
 
 
 class QTMovieT {
 
-    private static final Logger logger = Logger.getLogger(QTMovieT.class.getName());
+    private static final Logger logger = getLogger(QTMovieT.class.getName());
 
     /** */
     MyStream qtStream;
@@ -73,11 +76,11 @@ class QTMovieT {
     int setSavedMDat() {
 
         if (this.savedMDatPos == -1) {
-            logger.fine("stream contains mdat before moov but is not seekable");
+            logger.log(Level.DEBUG, "stream contains mdat before moov but is not seekable");
             return 2;
         }
 
-logger.finer("savedMDatPos: " + savedMDatPos);
+logger.log(Level.TRACE, "savedMDatPos: " + savedMDatPos);
         if (this.qtStream.position(this.savedMDatPos) != 0) {
             return 3;
         }
@@ -111,12 +114,12 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             try {
                 subChunkLen = this.qtStream.readUInt32();
             } catch (IOException e) {
-                logger.fine("(readChunkMoov) error reading subChunkLen - possibly number too large");
+                logger.log(Level.DEBUG, "(readChunkMoov) error reading subChunkLen - possibly number too large");
                 subChunkLen = 0;
             }
 
             if (subChunkLen <= 1 || subChunkLen > sizeRemaining) {
-                logger.fine("strange size for chunk inside moov");
+                logger.log(Level.DEBUG, "strange size for chunk inside moov");
                 return 0;
             }
 
@@ -136,7 +139,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             } else if (subChunkId == makeFourCC32(102, 114, 101, 101)) { // fourcc equals free
                 this.qtStream.skip(subChunkLen - 8); // FIXME not 8
             } else {
-                logger.fine("(moov) unknown chunk id: " + splitFourCC(subChunkId));
+                logger.log(Level.DEBUG, "(moov) unknown chunk id: " + splitFourCC(subChunkId));
                 return 0;
             }
 
@@ -181,12 +184,12 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             try {
                 subChunkLen = this.qtStream.readUInt32();
             } catch (IOException e) {
-                logger.fine("(readChunkTrak) error reading subChunkLen - possibly number too large");
+                logger.log(Level.DEBUG, "(readChunkTrak) error reading subChunkLen - possibly number too large");
                 subChunkLen = 0;
             }
 
             if (subChunkLen <= 1 || subChunkLen > sizeRemaining) {
-                logger.fine("strange size for chunk inside trak");
+                logger.log(Level.DEBUG, "strange size for chunk inside trak");
                 return 0;
             }
 
@@ -200,7 +203,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             } else if (subChunkId == makeFourCC32(101, 100, 116, 115)) { // fourcc equals edts
                 readChunkEdts(subChunkLen);
             } else {
-                logger.fine("(trak) unknown chunk id: " + splitFourCC(subChunkId));
+                logger.log(Level.DEBUG, "(trak) unknown chunk id: " + splitFourCC(subChunkId));
                 return 0;
             }
 
@@ -220,12 +223,12 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             try {
                 subChunkLen = this.qtStream.readUInt32();
             } catch (IOException e) {
-                logger.fine("(readChunkMdia) error reading subChunkLen - possibly number too large");
+                logger.log(Level.DEBUG, "(readChunkMdia) error reading subChunkLen - possibly number too large");
                 subChunkLen = 0;
             }
 
             if (subChunkLen <= 1 || subChunkLen > sizeRemaining) {
-                logger.fine("strange size for chunk inside mdia\n");
+                logger.log(Level.DEBUG, "strange size for chunk inside mdia\n");
                 return 0;
             }
 
@@ -239,7 +242,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
                 if (readChunkMinf(subChunkLen) == 0)
                     return 0;
             } else {
-                logger.fine("(mdia) unknown chunk id: " + splitFourCC(subChunkId));
+                logger.log(Level.DEBUG, "(mdia) unknown chunk id: " + splitFourCC(subChunkId));
                 return 0;
             }
 
@@ -261,16 +264,16 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         try {
             mediaInfoSize = this.qtStream.readUInt32();
         } catch (IOException e) {
-            logger.fine("(readChunkMinf) error reading mediaInfoSize - possibly number too large");
+            logger.log(Level.DEBUG, "(readChunkMinf) error reading mediaInfoSize - possibly number too large");
             mediaInfoSize = 0;
         }
 
         if (mediaInfoSize != 16) {
-            logger.fine("unexpected size in media info\n");
+            logger.log(Level.DEBUG, "unexpected size in media info\n");
             return 0;
         }
         if (this.qtStream.readUInt32() != makeFourCC32(115, 109, 104, 100)) { // "smhd" ascii values
-            logger.fine("not a sound header! can't handle this.");
+            logger.log(Level.DEBUG, "not a sound header! can't handle this.");
             return 0;
         }
         // now skip the rest
@@ -283,12 +286,12 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         try {
             dinfSize = this.qtStream.readUInt32();
         } catch (IOException e) {
-            logger.fine("(readChunkMinf) error reading dinfSize - possibly number too large");
+            logger.log(Level.DEBUG, "(readChunkMinf) error reading dinfSize - possibly number too large");
             dinfSize = 0;
         }
 
         if (this.qtStream.readUInt32() != makeFourCC32(100, 105, 110, 102)) { // "dinf" ascii values
-            logger.fine("expected dinf, didn't get it.");
+            logger.log(Level.DEBUG, "expected dinf, didn't get it.");
             return 0;
         }
         // skip it
@@ -301,12 +304,12 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         try {
             stblSize = (this.qtStream.readUInt32());
         } catch (Exception e) {
-            logger.fine("(readChunkMinf) error reading stblSize - possibly number too large");
+            logger.log(Level.DEBUG, "(readChunkMinf) error reading stblSize - possibly number too large");
             stblSize = 0;
         }
 
         if (this.qtStream.readUInt32() != makeFourCC32(115, 116, 98, 108)) { // "stbl" ascii values
-            logger.fine("expected stbl, didn't get it.");
+            logger.log(Level.DEBUG, "expected stbl, didn't get it.");
             return 0;
         }
         if (readChunkStbl(stblSize) == 0)
@@ -314,7 +317,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         sizeRemaining -= stblSize;
 
         if (sizeRemaining != 0) {
-            logger.fine("(readChunkMinf) - size remaining?");
+            logger.log(Level.DEBUG, "(readChunkMinf) - size remaining?");
             this.qtStream.skip(sizeRemaining);
         }
 
@@ -366,12 +369,12 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             try {
                 subChunkLen = this.qtStream.readUInt32();
             } catch (IOException e) {
-                logger.fine("(readChunkStbl) error reading subChunkLen - possibly number too large");
+                logger.log(Level.DEBUG, "(readChunkStbl) error reading subChunkLen - possibly number too large");
                 subChunkLen = 0;
             }
 
             if (subChunkLen <= 1 || subChunkLen > sizeRemaining) {
-                logger.fine("strange size for chunk inside stbl " + subChunkLen + " (remaining: " + sizeRemaining + ")");
+                logger.log(Level.DEBUG, "strange size for chunk inside stbl " + subChunkLen + " (remaining: " + sizeRemaining + ")");
                 return 0;
             }
 
@@ -389,7 +392,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             } else if (subChunkId == makeFourCC32(115, 116, 99, 111)) { // fourcc equals stco
                 readChunkStco(subChunkLen);
             } else {
-                logger.fine("(stbl) unknown chunk id: " + splitFourCC(subChunkId));
+                logger.log(Level.DEBUG, "(stbl) unknown chunk id: " + splitFourCC(subChunkId));
                 return 0;
             }
 
@@ -437,7 +440,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         try {
             numEntries = this.qtStream.readUInt32();
         } catch (IOException e) {
-            logger.fine("(readChunkStsz) error reading numEntries - possibly number too large");
+            logger.log(Level.DEBUG, "(readChunkStsz) error reading numEntries - possibly number too large");
             numEntries = 0;
         }
 
@@ -452,7 +455,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         }
 
         if (sizeRemaining != 0) {
-            logger.fine("(readChunkStsz) size remaining?");
+            logger.log(Level.DEBUG, "(readChunkStsz) size remaining?");
             this.qtStream.skip(sizeRemaining);
         }
     }
@@ -473,7 +476,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         try {
             numentries = this.qtStream.readUInt32();
         } catch (IOException e) {
-            logger.fine("(readChunkStsz) error reading numentries - possibly number too large");
+            logger.log(Level.DEBUG, "(readChunkStsz) error reading numentries - possibly number too large");
             numentries = 0;
         }
 
@@ -488,7 +491,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         }
 
         if (sizeRemaining != 0) {
-            logger.fine("(readChunkStsz) size remaining?");
+            logger.log(Level.DEBUG, "(readChunkStsz) size remaining?");
             this.qtStream.skip(sizeRemaining);
         }
     }
@@ -509,14 +512,14 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         try {
             numentries = this.qtStream.readUInt32();
         } catch (IOException e) {
-            logger.fine("(readChunkStsd) error reading numentries - possibly number too large");
+            logger.log(Level.DEBUG, "(readChunkStsd) error reading numentries - possibly number too large");
             numentries = 0;
         }
 
         sizeRemaining -= 4;
 
         if (numentries != 1) {
-            logger.fine("only expecting one entry in sample description atom!");
+            logger.log(Level.DEBUG, "only expecting one entry in sample description atom!");
             return 0;
         }
 
@@ -533,7 +536,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             entryRemaining -= 8;
 
             if (this.res.format != makeFourCC32(97, 108, 97, 99)) { // "file" ascii values
-                logger.fine("(readChunkStsd) error reading description atom - expecting file, got " + splitFourCC(this.res.format));
+                logger.log(Level.DEBUG, "(readChunkStsd) error reading description atom - expecting file, got " + splitFourCC(this.res.format));
                 return 0;
             }
 
@@ -545,7 +548,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             version = this.qtStream.readUInt16();
 
             if (version != 1)
-                logger.fine("unknown version??");
+                logger.log(Level.DEBUG, "unknown version??");
             entryRemaining -= 2;
 
             // revision level
@@ -578,7 +581,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
             this.res.codecDataLen = entryRemaining + 12 + 8;
 
             if (this.res.codecDataLen > this.res.codecData.length) {
-                logger.fine("(readChunkStsd) unexpected codec data length read from atom " + this.res.codecDataLen);
+                logger.log(Level.DEBUG, "(readChunkStsd) unexpected codec data length read from atom " + this.res.codecDataLen);
                 return 0;
             }
 
@@ -707,7 +710,7 @@ logger.finer("savedMDatPos: " + savedMDatPos);
         sizeRemaining -= 4;
 
         if (type != makeFourCC32(77, 52, 65, 32)) { // "M4A " ascii values
-            logger.fine("not M4A file");
+            logger.log(Level.DEBUG, "not M4A file");
             return;
         }
         int minorVer = this.qtStream.readUInt32();
@@ -735,14 +738,14 @@ logger.finer("savedMDatPos: " + savedMDatPos);
 
         // read the chunks
         while (true) {
-logger.finer("available: " + this.qtStream.stream.available());
+logger.log(Level.TRACE, "available: " + this.qtStream.stream.available());
             int chunkLen;
             int chunkId = 0;
 
             try {
                 chunkLen = this.qtStream.readUInt32();
             } catch (IOException e) {
-                logger.warning("(top) error reading chunkLen - possibly number too large");
+                logger.log(Level.WARNING, "(top) error reading chunkLen - possibly number too large");
                 chunkLen = 1;
             }
 
@@ -751,11 +754,11 @@ logger.finer("available: " + this.qtStream.stream.available());
             }
 
             if (chunkLen == 1) {
-                logger.fine("need 64bit support");
+                logger.log(Level.DEBUG, "need 64bit support");
                 return 0;
             }
             chunkId = this.qtStream.readUInt32();
-logger.finer("fourcc: " + splitFourCC(chunkId) + ", " + chunkLen);
+logger.log(Level.TRACE, "fourcc: " + splitFourCC(chunkId) + ", " + chunkLen);
 
             if (chunkId == makeFourCC32(102, 116, 121, 112)) { // fourcc equals ftyp
                 this.readChunkFtyp(chunkLen);
@@ -786,7 +789,7 @@ logger.finer("fourcc: " + splitFourCC(chunkId) + ", " + chunkLen);
             } else if (chunkId == makeFourCC32(106, 117, 110, 107)) { // fourcc equals junk
                 this.qtStream.skip(chunkLen - 8); // FIXME not 8
             } else {
-                logger.fine("(top) unknown chunk id: " + splitFourCC(chunkId));
+                logger.log(Level.DEBUG, "(top) unknown chunk id: " + splitFourCC(chunkId));
                 return 0;
             }
         }

@@ -32,5 +32,3 @@ public class AlacFileFormatType extends AudioFileFormat.Type {
         super(name, extension);
     }
 }
-
-/* */

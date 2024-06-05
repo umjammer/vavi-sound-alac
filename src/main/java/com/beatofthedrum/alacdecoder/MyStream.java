@@ -10,18 +10,21 @@ package com.beatofthedrum.alacdecoder;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.logging.Logger;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
+import static java.lang.System.getLogger;
 
 
 class MyStream {
 
-    private static final Logger logger = Logger.getLogger(MyStream.class.getName());
+    private static final Logger logger = getLogger(MyStream.class.getName());
 
     DataInputStream stream;
 
     int currentPos = 0;
 
-    private byte[] readBuf = new byte[8];
+    private final byte[] readBuf = new byte[8];
 
     MyStream(DataInputStream stream) {
         this.stream = stream;
@@ -37,10 +40,8 @@ class MyStream {
         return this.currentPos;
     }
 
-    /** */
+    /** TODO */
     int isEof() {
-        // TODO
-
         return 0;
     }
 
@@ -53,7 +54,7 @@ class MyStream {
 			throw new IllegalArgumentException("skip: request to seek backwards in stream - not supported, sorry");
         }
 
-logger.finer("skip: " + toskip);
+logger.log(Level.TRACE, "skip: " + toskip);
         bytesRead = this.stream.skipBytes(toskip);
         this.currentPos = this.currentPos + bytesRead;
     }

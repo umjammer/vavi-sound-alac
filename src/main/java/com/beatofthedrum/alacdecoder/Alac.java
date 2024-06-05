@@ -9,8 +9,11 @@ package com.beatofthedrum.alacdecoder;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.logging.Logger;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import javax.sound.sampled.AudioFormat;
+
+import static java.lang.System.getLogger;
 
 
 /**
@@ -21,9 +24,9 @@ import javax.sound.sampled.AudioFormat;
  */
 public class Alac implements AutoCloseable {
 
-    private static final Logger logger = Logger.getLogger(Alac.class.getName());
+    private static final Logger logger = getLogger(Alac.class.getName());
 
-    private AlacContext context;
+    private final AlacContext context;
 
     /**
      * Creates ALAC decoder.
@@ -50,7 +53,7 @@ public class Alac implements AutoCloseable {
         QTMovieT qtMovie = new QTMovieT(context.inputStream);
         DemuxResT demuxRes = new DemuxResT();
         int headerRead = qtMovie.read(demuxRes);
-logger.fine("headerRead: " + headerRead);
+logger.log(Level.DEBUG, "headerRead: " + headerRead);
 
         if (headerRead == 0) {
             String errorMessage;
@@ -63,13 +66,13 @@ logger.fine("headerRead: " + headerRead);
 try {
             if (is.markSupported()) {
                 is.reset();
-logger.fine("reset: " + is.available());
+logger.log(Level.DEBUG, "reset: " + is.available());
             } else if (is instanceof FileInputStream) {
                 ((FileInputStream) is).getChannel().position(0);
-logger.fine("seek: 0");
+logger.log(Level.DEBUG, "seek: 0");
             }
 } catch (IOException e) {
- logger.fine(e.getMessage());
+ logger.log(Level.DEBUG, e.getMessage());
 }
             throw new IllegalArgumentException(errorMessage);
         } else if (headerRead == 3) {
@@ -81,10 +84,10 @@ logger.fine("seek: 0");
 
             if (is.markSupported()) {
                 is.reset();
-logger.fine("reset: " + is.available());
+logger.log(Level.DEBUG, "reset: " + is.available());
             } else if (is instanceof FileInputStream) {
                 ((FileInputStream) is).getChannel().position(0);
-logger.fine("seek: 0");
+logger.log(Level.DEBUG, "seek: 0");
             }
 
             qtMovie.qtStream.currentPos = 0;

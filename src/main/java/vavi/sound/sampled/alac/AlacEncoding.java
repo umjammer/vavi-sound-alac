@@ -30,5 +30,3 @@ public class AlacEncoding extends AudioFormat.Encoding {
         super(name);
     }
 }
-
-/* */
