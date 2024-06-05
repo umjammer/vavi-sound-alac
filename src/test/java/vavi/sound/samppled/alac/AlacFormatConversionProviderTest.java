@@ -241,5 +241,3 @@ if (!System.getProperty("vavi.test", "").equals("ide")) {
         clip.close();
     }
 }
-
-/* */

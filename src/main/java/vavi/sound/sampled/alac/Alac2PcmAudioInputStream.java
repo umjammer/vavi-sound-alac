@@ -40,7 +40,7 @@ class Alac2PcmAudioInputStream extends AudioInputStream {
         private DataOutputStream out;
 
         /** */
-        private Alac alac;
+        private final Alac alac;
 
         /** */
         public AlacOutputEngine(Alac alac) throws IOException {
@@ -85,5 +85,3 @@ class Alac2PcmAudioInputStream extends AudioInputStream {
         }
     }
 }
-
-/* */

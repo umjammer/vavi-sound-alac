@@ -21,7 +21,7 @@ class MyStream {
 
     int currentPos = 0;
 
-    private byte[] readBuf = new byte[8];
+    private final byte[] readBuf = new byte[8];
 
     MyStream(DataInputStream stream) {
         this.stream = stream;
@@ -37,10 +37,8 @@ class MyStream {
         return this.currentPos;
     }
 
-    /** */
+    /** TODO */
     int isEof() {
-        // TODO
-
         return 0;
     }
 

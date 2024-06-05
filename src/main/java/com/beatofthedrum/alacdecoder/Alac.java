@@ -23,7 +23,7 @@ public class Alac implements AutoCloseable {
 
     private static final Logger logger = Logger.getLogger(Alac.class.getName());
 
-    private AlacContext context;
+    private final AlacContext context;
 
     /**
      * Creates ALAC decoder.
