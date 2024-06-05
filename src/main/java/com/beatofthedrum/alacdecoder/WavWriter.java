@@ -10,7 +10,10 @@ package com.beatofthedrum.alacdecoder;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.logging.Logger;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
+import static java.lang.System.getLogger;
 
 
 /**
@@ -18,7 +21,7 @@ import java.util.logging.Logger;
  */
 public class WavWriter {
 
-	private static final Logger logger = Logger.getLogger(WavWriter.class.getName());
+	private static final Logger logger = getLogger(WavWriter.class.getName());
 
     static void writeUInt32(FileOutputStream f, int v) {
         byte[] outputBytes = new byte[4];
@@ -30,7 +33,7 @@ public class WavWriter {
         try {
             f.write(outputBytes, 0, 4);
         } catch (IOException ioe) {
-			logger.fine(ioe.toString());
+			logger.log(Level.DEBUG, ioe.toString());
 		}
     }
 
@@ -42,7 +45,7 @@ public class WavWriter {
         try {
             f.write(outputBytes, 0, 2);
         } catch (IOException ioe) {
-			logger.fine(ioe.toString());
+			logger.log(Level.DEBUG, ioe.toString());
         }
     }
 
@@ -58,7 +61,7 @@ public class WavWriter {
         try {
             f.write(buffAsBytes, 0, 4);
         } catch (IOException ioe) {
-			logger.fine(ioe.toString());
+			logger.log(Level.DEBUG, ioe.toString());
         }
 
         writeUInt32(f, (36 + dataSize));
@@ -70,7 +73,7 @@ public class WavWriter {
         try {
             f.write(buffAsBytes, 0, 4);
         } catch (IOException ioe) {
-			logger.fine(ioe.toString());
+			logger.log(Level.DEBUG, ioe.toString());
         }
 
         // write fmt header
@@ -82,7 +85,7 @@ public class WavWriter {
         try {
             f.write(buffAsBytes, 0, 4);
         } catch (IOException ioe) {
-			logger.fine(ioe.toString());
+			logger.log(Level.DEBUG, ioe.toString());
         }
 
         writeUInt32(f, 16);
@@ -102,7 +105,7 @@ public class WavWriter {
         try {
             f.write(buffAsBytes, 0, 4);
         } catch (IOException ioe) {
-			logger.fine(ioe.toString());
+			logger.log(Level.DEBUG, ioe.toString());
         }
 
         writeUInt32(f, dataSize);

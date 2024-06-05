@@ -8,8 +8,10 @@
 
 package com.beatofthedrum.alacdecoder;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import java.util.logging.Logger;
+import static java.lang.System.getLogger;
 
 
 /**
@@ -17,7 +19,7 @@ import java.util.logging.Logger;
  */
 class AlacFile {
 
-    private static final Logger logger = Logger.getLogger(AlacFile.class.getName());
+    private static final Logger logger = getLogger(AlacFile.class.getName());
 
     static int RICE_THRESHOLD = 8;
     byte[] inputBuffer;
@@ -451,7 +453,7 @@ class AlacFile {
                 if (predictionType == 0) { // adaptive fir
                     this.outputSamplesBufferA = predictorDecompressFirAdapt(this.predicterrorBufferA, outputSamples, readSampleSize, predictorCoefTable, predictorCoefNum, predictionQuantitization);
                 } else {
-                    logger.warning("FIXME: unhandled predicition type: " + predictionType);
+                    logger.log(Level.WARNING, "FIXME: unhandled predicition type: " + predictionType);
 
                     // i think the only other prediction type (or perhaps this is just a
 					// boolean?) runs adaptive fir twice.. like:
@@ -533,7 +535,7 @@ class AlacFile {
             }
             case 20:
             case 32:
-                logger.warning("FIXME: unimplemented sample size " + this.setInfo_sampleSize);
+                logger.log(Level.WARNING, "FIXME: unimplemented sample size " + this.setInfo_sampleSize);
             default:
             }
         } else if (channels == 1) { // 2 channels
@@ -639,7 +641,7 @@ class AlacFile {
                     this.outputSamplesBufferA = predictorDecompressFirAdapt(this.predicterrorBufferA, outputSamples, readSampleSize, predictorCoefTableA, predictorCoefNumA, predictionQuantitizationA);
 
                 } else { // see mono case
-                    logger.warning("FIXME: unhandled predicition type: " + predictionTypeA);
+                    logger.log(Level.WARNING, "FIXME: unhandled predicition type: " + predictionTypeA);
                 }
 
                 // channel 2
@@ -648,7 +650,7 @@ class AlacFile {
                 if (predictionTypeB == 0) { // adaptive fir
                     this.outputsamplesBufferB = predictorDecompressFirAdapt(this.predicterrorBufferB, outputSamples, readSampleSize, predictorCoefTableB, predictorCoefNumB, predictionQuantitizationB);
                 } else {
-                    logger.warning("FIXME: unhandled predicition type: " + predictionTypeB);
+                    logger.log(Level.WARNING, "FIXME: unhandled predicition type: " + predictionTypeB);
                 }
             } else { // not compressed, easy case
                 if (this.setInfo_sampleSize <= 16) {
@@ -710,7 +712,7 @@ class AlacFile {
             case 20:
             case 32:
             default:
-                logger.warning("FIXME: unimplemented sample size " + this.setInfo_sampleSize);
+                logger.log(Level.WARNING, "FIXME: unimplemented sample size " + this.setInfo_sampleSize);
             }
         }
         return outputSize;

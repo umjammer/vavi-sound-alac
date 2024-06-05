@@ -8,14 +8,16 @@
 
 package com.beatofthedrum.alacdecoder;
 
-
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.channels.FileChannel;
-import java.util.logging.Logger;
+
+import static java.lang.System.getLogger;
 
 
 /**
@@ -23,7 +25,7 @@ import java.util.logging.Logger;
  */
 public class AlacContext {
 
-    private static final Logger logger = Logger.getLogger(AlacContext.class.getName());
+    private static final Logger logger = getLogger(AlacContext.class.getName());
 
     /**
      * @author Denis Tulskiy
@@ -42,18 +44,18 @@ public class AlacContext {
         public AlacInputStream(InputStream in) throws IOException {
             super(in);
             total = in.available();
-logger.fine("total: " + total);
+logger.log(Level.DEBUG, "total: " + total);
         }
 
         public void seek(long pos) throws IOException {
             if (in instanceof FileInputStream) {
                 FileChannel fc = ((FileInputStream) in).getChannel();
                 fc.position(pos);
-logger.fine("position: " + fc.position());
+logger.log(Level.DEBUG, "position: " + fc.position());
             } else if (in.markSupported()) {
                 in.reset();
                 in.mark(total);
-logger.fine("reset: " + in.available());
+logger.log(Level.DEBUG, "reset: " + in.available());
                 if (pos != 0)
                     skipBytes((int) pos);
             }
