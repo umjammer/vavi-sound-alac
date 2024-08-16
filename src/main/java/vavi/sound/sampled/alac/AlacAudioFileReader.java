@@ -78,7 +78,7 @@ logger.log(Level.DEBUG, "enter available: " + bitStream.available());
         try {
             alac = new Alac(bitStream);
         } catch (Exception e) {
-logger.log(Level.TRACE, "error exit available: " + bitStream.available());
+logger.log(Level.DEBUG, "error exit available: " + bitStream.available());
 logger.log(Level.TRACE, e.getMessage(), e);
             throw (UnsupportedAudioFileException) new UnsupportedAudioFileException(e.getMessage()).initCause(e);
         }
