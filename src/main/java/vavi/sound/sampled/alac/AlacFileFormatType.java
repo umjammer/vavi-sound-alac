@@ -28,7 +28,7 @@ public class AlacFileFormatType extends AudioFileFormat.Type {
      * @param name the name of the ALAC File Format.
      * @param extension the file extension for this ALAC File Format.
      */
-    public AlacFileFormatType(String name, String extension) {
+    private AlacFileFormatType(String name, String extension) {
         super(name, extension);
     }
 }
