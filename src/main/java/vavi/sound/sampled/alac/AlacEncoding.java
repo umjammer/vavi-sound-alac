@@ -6,7 +6,6 @@
 
 package vavi.sound.sampled.alac;
 
-
 import javax.sound.sampled.AudioFormat;
 
 

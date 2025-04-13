@@ -20,7 +20,7 @@ class QTMovieT {
     private static final Logger logger = getLogger(QTMovieT.class.getName());
 
     /** */
-    MyStream qtStream;
+    final MyStream qtStream;
 
     /** */
     private DemuxResT res;
@@ -421,7 +421,7 @@ logger.log(Level.TRACE, "savedMDatPos: " + savedMDatPos);
         uniformSize = (this.qtStream.readUInt32());
         if (uniformSize != 0) {
             // Normally files have intiable sample sizes, this handles the case where
-			// they are all the same size
+            // they are all the same size
 
             int uniformNum = 0;
 
@@ -667,7 +667,7 @@ logger.log(Level.TRACE, "savedMDatPos: " + savedMDatPos);
         int strlen = this.qtStream.readUint8();
 
         // rewrote this to handle case where we actually read more than required
-		// so here we work out how much we need to read first
+        // so here we work out how much we need to read first
 
         sizeRemaining -= 1;
 
@@ -771,8 +771,8 @@ logger.log(Level.TRACE, "fourcc: " + splitFourCC(chunkId) + ", " + chunkLen);
                 foundMoov = 1;
             }
             // if we hit mdat before we've found moov, record the position
-			// and move on. We can then come back to mdat later.
-			// This presumes the stream supports seeking backwards.
+            // and move on. We can then come back to mdat later.
+            // This presumes the stream supports seeking backwards.
             else if (chunkId == makeFourCC32(109, 100, 97, 116)) { // fourcc equals mdat
                 int notFoundMoov = 0;
                 if (foundMoov == 0)

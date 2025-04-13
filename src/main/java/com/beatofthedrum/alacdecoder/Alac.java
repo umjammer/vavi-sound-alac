@@ -67,8 +67,8 @@ try {
             if (is.markSupported()) {
                 is.reset();
 logger.log(Level.DEBUG, "reset: " + is.available());
-            } else if (is instanceof FileInputStream) {
-                ((FileInputStream) is).getChannel().position(0);
+            } else if (is instanceof FileInputStream fis) {
+                fis.getChannel().position(0);
 logger.log(Level.DEBUG, "seek: 0");
             }
 } catch (IOException e) {
@@ -85,8 +85,8 @@ logger.log(Level.DEBUG, "seek: 0");
             if (is.markSupported()) {
                 is.reset();
 logger.log(Level.DEBUG, "reset: " + is.available());
-            } else if (is instanceof FileInputStream) {
-                ((FileInputStream) is).getChannel().position(0);
+            } else if (is instanceof FileInputStream fis) {
+                fis.getChannel().position(0);
 logger.log(Level.DEBUG, "seek: 0");
             }
 

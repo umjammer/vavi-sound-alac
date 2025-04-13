@@ -68,18 +68,14 @@ class AlacFormatConversionProviderTest {
 
     static final double volume = Double.parseDouble(System.getProperty("vavi.test.volume",  "0.2"));
 
-    static long time;
-
-    static {
-        System.setProperty("vavi.util.logging.VaviFormatter.extraClassMethod", "org\\.tritonus\\.share\\.TDebug#out");
-
-        time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 9 * 1000;
-    }
+    static final boolean onIde = System.getProperty("vavi.test", "").equals("ide");
+    static final long time = onIde ? 1000 * 1000 : 9 * 1000;
 
     @Property
     String alac = "src/test/resources/alac.m4a";
 
     @Test
+    @DisplayName("check contains")
     void testX() throws Exception {
         ServiceLoader<AudioFileReader> loader = ServiceLoader.load(AudioFileReader.class);
         AtomicBoolean result = new AtomicBoolean();
@@ -102,13 +98,12 @@ System.err.println(spi);
         assertTrue(result2.get());
     }
 
-    // @see BufferedInputStream
-    static final int BUF_MAX = Integer.MAX_VALUE - 8;
+    static final int BUF_MAX = 50 * 1000 * 1000;
 
     @Test
     @DisplayName("directly")
     void test0() throws Exception {
-
+Debug.print(alac);
         Path path = Paths.get(alac);
         AudioInputStream sourceAis = new AlacAudioFileReader().getAudioInputStream(new BufferedInputStream(Files.newInputStream(path), BUF_MAX));
 
@@ -147,9 +142,9 @@ Debug.println("OUT: " + outAudioFormat);
     }
 
     @Test
-    @DisplayName("as spi")
+    @DisplayName("via spi")
     void test1() throws Exception {
-
+Debug.print(alac);
         Path path = Paths.get(alac);
         AudioInputStream sourceAis = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(path), BUF_MAX));
 
@@ -215,26 +210,26 @@ Debug.println(ais.getFormat());
     @Test
     @DisplayName("clip")
     void test3() throws Exception {
-
+Debug.print(alac);
         AudioInputStream ais = AudioSystem.getAudioInputStream(Paths.get(alac).toFile());
 Debug.println(ais.getFormat());
 
         Clip clip = AudioSystem.getClip();
-CountDownLatch cdl = new CountDownLatch(1);
-clip.addLineListener(ev -> {
- Debug.println(ev.getType());
- if (ev.getType() == LineEvent.Type.STOP)
-  cdl.countDown();
-});
+        CountDownLatch cdl = new CountDownLatch(1);
+        clip.addLineListener(ev -> {
+Debug.println(ev.getType());
+            if (ev.getType() == LineEvent.Type.STOP)
+                cdl.countDown();
+        });
         clip.open(AudioSystem.getAudioInputStream(new AudioFormat(44100, 16, 2, true, false), ais));
 SoundUtil.volume(clip, volume);
         clip.start();
-if (!System.getProperty("vavi.test", "").equals("ide")) {
- Thread.sleep(10 * 1000);
+if (!onIde) {
+ Thread.sleep(time);
  clip.stop();
- Debug.println("not on ide");
+ Debug.println("INTERRUPTED");
 } else {
- cdl.await();
+        cdl.await();
 }
         clip.drain();
         clip.stop();

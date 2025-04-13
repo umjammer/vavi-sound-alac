@@ -29,13 +29,13 @@ import static vavix.util.DelayedWorker.later;
 
 
 /**
- * Test001.
+ * TestCase.
  *
  * @author <a href="mailto:umjammer@gmail.com">Naohide Sano</a> (nsano)
  * @version 0.00 111022 nsano initial version <br>
  */
 @PropsEntity(url = "file:local.properties")
-class Test001 {
+class TestCase {
 
     static boolean localPropertiesExists() {
         return Files.exists(Paths.get("local.properties"));
@@ -48,15 +48,12 @@ class Test001 {
         }
     }
 
-    static long time;
+    static final long time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 9 * 1000;
 
-    static final double volume = Double.parseDouble(System.getProperty("vavi.test.volume",  "0.2"));
+    @Property(name = "vavi.test.volume")
+    double volume = 0.2;
 
-    static {
-        time = System.getProperty("vavi.test", "").equals("ide") ? 1000 * 1000 : 9 * 1000;
-    }
-
-    byte[] formatSamples(int bps, int[] src, int samcnt) {
+    static byte[] formatSamples(int bps, int[] src, int samcnt) {
         int temp = 0;
         int counter = 0;
         int counter2 = 0;
@@ -102,24 +99,24 @@ class Test001 {
     void test1() throws Exception {
 
         AlacContext ac = AlacContext.openFileInput(Paths.get(alac).toFile());
-        int num_channels = ac.getNumChannels();
-        int total_samples = ac.getNumSamples();
-        int byteps = ac.getBytesPerSample();
-        int sample_rate = ac.getSampleRate();
-        int bitps = ac.getBitsPerSample();
-Debug.println("num_channels: " + num_channels +
-                   ", total_samples: " + total_samples +
-                   ", byteps: " + byteps +
-                   ", sample_rate: " + sample_rate +
-                   ", bitps: " + bitps);
+        int numChannels = ac.getNumChannels();
+        int totalSamples = ac.getNumSamples();
+        int bytePs = ac.getBytesPerSample();
+        int sampleRate = ac.getSampleRate();
+        int bitPs = ac.getBitsPerSample();
+Debug.println("numChannels: " + numChannels +
+                   ", totalSamples: " + totalSamples +
+                   ", bytePs: " + bytePs +
+                   ", sampleRate: " + sampleRate +
+                   ", bitPs: " + bitPs);
 
         AudioFormat audioFormat = new AudioFormat(
             AudioFormat.Encoding.PCM_SIGNED,
-            sample_rate,
-            bitps,
-            num_channels,
-            byteps * num_channels,
-            sample_rate,
+            sampleRate,
+            bitPs,
+            numChannels,
+            bytePs * numChannels,
+            sampleRate,
             false);
 Debug.println(audioFormat);
 
@@ -152,8 +149,7 @@ Debug.println(audioFormat);
         ac.close();
     }
 
-    // @see BufferedInputStream
-    static final int BUF_MAX = Integer.MAX_VALUE - 8;
+    static final int BUF_MAX = 50 * 1000 * 1000;
 
     @Test
     @DisplayName("proto 2")
@@ -163,21 +159,21 @@ Debug.println(audioFormat);
         Alac decoder = new Alac(new BufferedInputStream(is, BUF_MAX));
         int numChannels = decoder.getChannels();
         int totalSamples = decoder.getNumSamples();
-        int bytePS = decoder.getFrameSize();
+        int bytePs = decoder.getFrameSize();
         int sampleRate = decoder.getSampleRate();
-        int bitPS = decoder.getSampleSizeInBits();
+        int bitPs = decoder.getSampleSizeInBits();
 Debug.println("numChannels: " + numChannels +
                    ", totalSamples: " + totalSamples +
-                   ", bytePS: " + bytePS +
+                   ", bytePs: " + bytePs +
                    ", sampleRate: " + sampleRate +
-                   ", bitPS: " + bitPS);
+                   ", bitPs: " + bitPs);
 
         AudioFormat audioFormat = new AudioFormat(
             AudioFormat.Encoding.PCM_SIGNED,
             sampleRate,
-            bitPS,
+            bitPs,
             numChannels,
-            bytePS * numChannels,
+            bytePs * numChannels,
             sampleRate,
             false);
 Debug.println(audioFormat);
@@ -191,9 +187,9 @@ Debug.println(audioFormat);
         volume(line, volume);
 
         byte[] pcmBuffer = new byte[0xffff];
-        int[] pDestBuffer = new int[1024 * 24 * 3]; // 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps)
+        int[] destBuffer = new int[1024 * 24 * 3]; // 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps)
         while (!later(time).come()) {
-            int bytes_unpacked = decoder.decode(pDestBuffer, pcmBuffer);
+            int bytes_unpacked = decoder.decode(destBuffer, pcmBuffer);
             if (bytes_unpacked == -1) {
                 break;
             }
