@@ -46,16 +46,16 @@ class DemuxResT {
     int sampleSize;
     int sampleRate;
     int format;
-    private int[] buf = new int[1024 * 80];
+    private final int[] buf = new int[1024 * 80];
 
-    SampleInfo[] timeToSample = new SampleInfo[16];
+    final SampleInfo[] timeToSample = new SampleInfo[16];
     int numTimeToSamples;
 
     int[] sampleByteSize;
 
     int codecDataLen;
 
-    int[] codecData = new int[1024];
+    final int[] codecData = new int[1024];
 
     int[] stco;
     ChunkInfo[] stsc;

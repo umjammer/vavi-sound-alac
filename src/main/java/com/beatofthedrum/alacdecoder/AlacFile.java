@@ -21,7 +21,7 @@ class AlacFile {
 
     private static final Logger logger = getLogger(AlacFile.class.getName());
 
-    static int RICE_THRESHOLD = 8;
+    static final int RICE_THRESHOLD = 8;
     byte[] inputBuffer;
     int ibIndex = 0;
     /** used so we can do arbitrary bit reads */
@@ -31,19 +31,19 @@ class AlacFile {
     int numChannels = 0;
     int bytesPerSample = 0;
 
-    LeadingZeros lz = new LeadingZeros();
+    final LeadingZeros lz = new LeadingZeros();
 
     private static final int bufferSize = 16384;
 
     // buffers
-    int[] predicterrorBufferA = new int[bufferSize];
-    int[] predicterrorBufferB = new int[bufferSize];
+    final int[] predicterrorBufferA = new int[bufferSize];
+    final int[] predicterrorBufferB = new int[bufferSize];
 
     int[] outputSamplesBufferA = new int[bufferSize];
     int[] outputsamplesBufferB = new int[bufferSize];
 
-    int[] uncompressedBytesBufferA = new int[bufferSize];
-    int[] uncompressedBytesBufferB = new int[bufferSize];
+    final int[] uncompressedBytesBufferA = new int[bufferSize];
+    final int[] uncompressedBytesBufferB = new int[bufferSize];
 
     // stuff from setinfo
 
@@ -63,9 +63,9 @@ class AlacFile {
     /** end setinfo stuff */
     int setInfo_8a_rate = 0; // 0x0000ac44
 
-    public int[] predictorCoefTable = new int[1024];
-    public int[] predictorCoefTableA = new int[1024];
-    public int[] predictorCoefTableB = new int[1024];
+    public final int[] predictorCoefTable = new int[1024];
+    public final int[] predictorCoefTableA = new int[1024];
+    public final int[] predictorCoefTableB = new int[1024];
 
     // stream reading
 
@@ -88,7 +88,7 @@ class AlacFile {
 
         if (predictorCoefNum == 0x1f) { // 11111 - max value of predictorCoefNum
             // second-best case scenario for fir decompression,
-			// error describes a small difference from the previous sample only
+            // error describes a small difference from the previous sample only
             if (outputSize <= 1)
                 return (bufferOut);
 
@@ -393,7 +393,7 @@ class AlacFile {
             int tempPred = 0;
 
             // 2^result = something to do with output waiting.
-			// perhaps matters if we read > 1 frame in a pass?
+            // perhaps matters if we read > 1 frame in a pass?
             readBits(4);
 
             readBits(12); // unknown, skip 12 bits
@@ -406,7 +406,7 @@ class AlacFile {
 
             if (hasSize != 0) {
                 // now read the number of samples,
-				// as a 32bit integer
+                // as a 32bit integer
                 outputSamples = readBits(32);
                 outputSize = outputSamples * this.bytesPerSample;
             }
@@ -456,10 +456,10 @@ class AlacFile {
                     logger.log(Level.WARNING, "FIXME: unhandled predicition type: " + predictionType);
 
                     // i think the only other prediction type (or perhaps this is just a
-					// boolean?) runs adaptive fir twice.. like:
-					// predictor_decompress_fir_adapt(predictor_error, tempout, ...)
-					// predictor_decompress_fir_adapt(predictor_error, outputsamples ...)
-					// little strange..
+                    // boolean?) runs adaptive fir twice.. like:
+                    // predictor_decompress_fir_adapt(predictor_error, tempout, ...)
+                    // predictor_decompress_fir_adapt(predictor_error, outputsamples ...)
+                    // little strange..
                 }
 
             } else { // not compressed, easy case
@@ -480,7 +480,7 @@ class AlacFile {
 
                         audiobits = readBits(16);
                         // special case of sign extension..
-						// as we'll be ORing the low 16bits into this
+                        // as we'll be ORing the low 16bits into this
                         audiobits = audiobits << (this.setInfo_sampleSize - 16);
                         audiobits = audiobits | readBits(this.setInfo_sampleSize - 16);
                         int x = audiobits & ((1 << 24) - 1);
@@ -523,8 +523,8 @@ class AlacFile {
                     outBuffer[i * this.numChannels * 3 + 2] = ((sample >> 16) & 0xFF);
 
                     // We have to handle the case where the data is actually mono, but the stsd atom says it has 2 channels
-					// in this case we create a stereo file where one of the channels is silent. If mono and 1 channel this value
-					// will be overwritten in the next iteration
+                    // in this case we create a stereo file where one of the channels is silent. If mono and 1 channel this value
+                    // will be overwritten in the next iteration
 
                     outBuffer[i * this.numChannels * 3 + 3] = 0;
                     outBuffer[i * this.numChannels * 3 + 4] = 0;
@@ -549,7 +549,7 @@ class AlacFile {
             int interlacingLeftWeight;
 
             // 2^result = something to do with output waiting.
-			// perhaps matters if we read > 1 frame in a pass?
+            // perhaps matters if we read > 1 frame in a pass?
             readBits(4);
 
             readBits(12); // unknown, skip 12 bits
@@ -815,14 +815,14 @@ class AlacFile {
         result = ((part1 << 16) | (part2 << 8) | part3);
 
         // shift left by the number of bits we've already read,
-		// so that the top 'n' bits of the 24 bits we read will
-		// be the return bits
+        // so that the top 'n' bits of the 24 bits we read will
+        // be the return bits
         result = result << this.inputBufferBitAccumulator;
 
         result = result & 0x00ff_ffff;
 
         // and then only want the top 'n' bits from that, where
-		// n is 'bits'
+        // n is 'bits'
         result = result >> (24 - bits);
 
         newAccumulator = (this.inputBufferBitAccumulator + bits);

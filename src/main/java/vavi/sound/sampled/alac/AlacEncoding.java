@@ -6,7 +6,6 @@
 
 package vavi.sound.sampled.alac;
 
-
 import javax.sound.sampled.AudioFormat;
 
 
@@ -26,7 +25,7 @@ public class AlacEncoding extends AudioFormat.Encoding {
      *
      * @param name Name of the ALAC encoding.
      */
-    public AlacEncoding(String name) {
+    private AlacEncoding(String name) {
         super(name);
     }
 }

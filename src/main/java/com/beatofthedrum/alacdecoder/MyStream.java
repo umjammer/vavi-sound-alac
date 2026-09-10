@@ -51,7 +51,7 @@ class MyStream {
         int bytesRead = 0;
 
         if (toskip < 0) {
-			throw new IllegalArgumentException("skip: request to seek backwards in stream - not supported, sorry");
+            throw new IllegalArgumentException("skip: request to seek backwards in stream - not supported, sorry");
         }
 
 logger.log(Level.TRACE, "skip: " + toskip);

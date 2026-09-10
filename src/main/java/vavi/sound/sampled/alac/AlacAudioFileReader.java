@@ -72,13 +72,13 @@ public class AlacAudioFileReader extends AudioFileReader {
      *                valid audio file data recognized by the system.
      * @exception IOException if an I/O exception occurs.
      */
-    protected AudioFileFormat getAudioFileFormat(InputStream bitStream, int mediaLength) throws UnsupportedAudioFileException, IOException {
+    protected static AudioFileFormat getAudioFileFormat(InputStream bitStream, int mediaLength) throws UnsupportedAudioFileException, IOException {
 logger.log(Level.DEBUG, "enter available: " + bitStream.available());
         Alac alac;
         try {
             alac = new Alac(bitStream);
         } catch (Exception e) {
-logger.log(Level.TRACE, "error exit available: " + bitStream.available());
+logger.log(Level.DEBUG, "error exit available: " + bitStream.available());
 logger.log(Level.TRACE, e.getMessage(), e);
             throw (UnsupportedAudioFileException) new UnsupportedAudioFileException(e.getMessage()).initCause(e);
         }
@@ -130,7 +130,7 @@ logger.log(Level.TRACE, e.getMessage(), e);
      *                valid audio file data recognized by the system.
      * @exception IOException if an I/O exception occurs.
      */
-    protected AudioInputStream getAudioInputStream(InputStream inputStream, int mediaLength) throws UnsupportedAudioFileException, IOException {
+    protected static AudioInputStream getAudioInputStream(InputStream inputStream, int mediaLength) throws UnsupportedAudioFileException, IOException {
         AudioFileFormat audioFileFormat = getAudioFileFormat(inputStream, mediaLength);
         return new AudioInputStream(inputStream, audioFileFormat.getFormat(), audioFileFormat.getFrameLength());
     }

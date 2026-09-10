@@ -58,10 +58,10 @@ class Alac2PcmAudioInputStream extends AudioInputStream {
         }
 
         /** */
-        private byte[] pcmBuffer = new byte[0xffff];
+        private final byte[] pcmBuffer = new byte[0xffff];
 
         /** 24kb buffer = 4096 frames = 1 opus sample (we support max 24bps) */
-        private int[] pDestBuffer = new int[1024 * 24 * 3];
+        private final int[] pDestBuffer = new int[1024 * 24 * 3];
 
         /** */
         @Override
